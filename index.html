@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+        content="BloodConnect - Find blood donors quickly and help save lives.">
+
+    <title>BloodConnect | Find. Donate. Save Lives.</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+
+    <header class="navbar">
+        <div class="container nav-container">
+
+            <a href="#" class="logo">
+                <span class="logo-icon">♥</span>
+                <span>Blood<span class="logo-highlight">Connect</span></span>
+            </a>
+
+            <nav class="nav-links">
+
+                <a href="#home">Home</a>
+
+                <a href="#find-donor">Find Donor</a>
+
+                <a href="#how-it-works">How It Works</a>
+
+                <a href="#blood-groups">Blood Groups</a>
+
+                <a href="#about">About</a>
+
+            </nav>
+
+            <div class="nav-actions">
+
+    <a href="#login" class="login-btn">
+        Login
+    </a>
+
+    <a href="#register" class="donate-btn">
+        Become a Donor
+    </a>
+
+</div>
+
+
+<!-- Theme Toggle -->
+
+<button
+    class="theme-toggle"
+    id="themeToggle"
+    aria-label="Toggle dark mode"
+    title="Toggle theme"
+>
+    <span id="themeIcon">☾</span>
+</button>
+
+
+<!-- Mobile Menu -->
+
+<button
+    class="menu-btn"
+    id="menuBtn"
+    aria-label="Open navigation menu"
+>
+    ☰
+</button>
+
+        </div>
+    </header>
+
+
+    <main>
+
+        <!-- ================= HERO ================= -->
+
+        <section class="hero" id="home">
+
+            <div class="container hero-container">
+
+                <div class="hero-content">
+
+                    <span class="hero-badge">
+                        🩸 Every donation matters
+                    </span>
+
+                    <h1>
+                        Every drop can become
+                        <span>someone's second chance.</span>
+                    </h1>
+
+                    <p>
+                        Find blood donors quickly, connect with people
+                        who can help, and make a difference when it
+                        matters most.
+                    </p>
+
+                    <div class="hero-buttons">
+
+                        <a href="#find-donor" class="primary-btn">
+                            Find a Donor
+                            <span>→</span>
+                        </a>
+
+                        <a href="#register" class="secondary-btn">
+                            Become a Donor
+                        </a>
+
+                    </div>
+
+                    <div class="hero-trust">
+
+                        <div class="trust-avatars">
+                            <span>R</span>
+                            <span>A</span>
+                            <span>K</span>
+                            <span>+</span>
+                        </div>
+
+                        <div>
+                            <strong>People helping people</strong>
+                            <small>Join our growing donor community</small>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- HERO VISUAL -->
+
+                <div class="hero-visual">
+
+                    <div class="hero-card">
+
+                        <div class="blood-symbol">
+                            ♥
+                        </div>
+
+                        <div class="floating-card card-one">
+
+                            <span class="status-dot"></span>
+
+                            <div>
+                                <strong>Donor Available</strong>
+                                <small>O+ • 2.4 km away</small>
+                            </div>
+
+                        </div>
+
+                        <div class="floating-card card-two">
+
+                            <span>🩸</span>
+
+                            <div>
+                                <strong>Blood Needed</strong>
+                                <small>Emergency Request</small>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= QUICK SEARCH ================= -->
+
+        <section class="search-section" id="find-donor">
+
+            <div class="container">
+
+                <div class="search-card">
+
+                    <div class="search-heading">
+
+                        <span class="section-label">
+                            FIND A DONOR
+                        </span>
+
+                        <h2>
+                            Find the right blood donor
+                        </h2>
+
+                        <p>
+                            Search available donors by blood group
+                            and location.
+                        </p>
+
+                    </div>
+
+
+                    <form class="donor-search-form" id="donorSearchForm">
+
+                        <div class="form-group">
+
+                            <label for="bloodGroup">
+                                Blood Group
+                            </label>
+
+                            <select id="bloodGroup" required>
+
+                                <option value="">
+                                    Select blood group
+                                </option>
+
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="location">
+                                Location
+                            </label>
+
+                            <input
+                                type="text"
+                                id="location"
+                                placeholder="Enter city or area"
+                                required
+                            >
+
+                        </div>
+
+
+                        <button type="submit" class="search-btn">
+                            Search Donors
+                            <span>→</span>
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= DONOR RESULTS ================= -->
+
+<section class="results-section" id="donor-results">
+
+    <div class="container">
+
+        <div class="results-header">
+
+            <div>
+                <span class="section-label">
+                    DONOR RESULTS
+                </span>
+
+                <h2>
+                    Available donors
+                </h2>
+
+                <p id="resultsSubtitle">
+                    Search for donors by blood group and location.
+                </p>
+            </div>
+
+            <div class="results-count" id="resultsCount">
+                0 donors
+            </div>
+
+        </div>
+
+
+        <!-- Donor cards will be inserted by JavaScript -->
+
+        <div class="donor-results-grid" id="donorResults">
+
+            <!-- JavaScript will generate donor cards here -->
+
+        </div>
+
+
+        <!-- No results -->
+
+        <div class="no-results" id="noResults">
+
+            <div class="no-results-icon">
+                🩸
+            </div>
+
+            <h3>
+                No donors found
+            </h3>
+
+            <p>
+                Try searching another blood group or location.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+        <!-- ================= STATS ================= -->
+
+        <section class="stats-section">
+
+            <div class="container stats-grid">
+
+                <div class="stat-item">
+                    <strong>1,250+</strong>
+                    <span>Registered Donors</span>
+                </div>
+
+                <div class="stat-item">
+                    <strong>320+</strong>
+                    <span>Blood Requests</span>
+                </div>
+
+                <div class="stat-item">
+                    <strong>28+</strong>
+                    <span>Cities Covered</span>
+                </div>
+
+                <div class="stat-item">
+                    <strong>98%</strong>
+                    <span>Response Rate</span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= WHY US ================= -->
+
+        <section class="why-section" id="about">
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <span class="section-label">
+                        WHY BLOODCONNECT
+                    </span>
+
+                    <h2>
+                        Technology that connects
+                        people when it matters.
+                    </h2>
+
+                    <p>
+                        We make it easier to find potential donors
+                        and respond to blood needs quickly.
+                    </p>
+
+                </div>
+
+
+                <div class="feature-grid">
+
+                    <article class="feature-card">
+
+                        <div class="feature-icon">
+                            🔎
+                        </div>
+
+                        <h3>
+                            Quick Search
+                        </h3>
+
+                        <p>
+                            Find potential donors using blood group
+                            and location filters.
+                        </p>
+
+                    </article>
+
+
+                    <article class="feature-card">
+
+                        <div class="feature-icon">
+                            📍
+                        </div>
+
+                        <h3>
+                            Location Based
+                        </h3>
+
+                        <p>
+                            Connect with donors in your city or
+                            nearby areas.
+                        </p>
+
+                    </article>
+
+
+                    <article class="feature-card">
+
+                        <div class="feature-icon">
+                            ⚡
+                        </div>
+
+                        <h3>
+                            Fast Response
+                        </h3>
+
+                        <p>
+                            Make urgent blood requests easier to
+                            discover and respond to.
+                        </p>
+
+                    </article>
+
+
+                    <article class="feature-card">
+
+                        <div class="feature-icon">
+                            🔒
+                        </div>
+
+                        <h3>
+                            Simple & Secure
+                        </h3>
+
+                        <p>
+                            Keep donor information organized and
+                            accessible through a clean platform.
+                        </p>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= HOW IT WORKS ================= -->
+
+        <section class="how-section" id="how-it-works">
+
+            <div class="container">
+
+                <div class="section-heading center">
+
+                    <span class="section-label">
+                        HOW IT WORKS
+                    </span>
+
+                    <h2>
+                        Three steps. One meaningful action.
+                    </h2>
+
+                </div>
+
+
+                <div class="steps-grid">
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            01
+                        </div>
+
+                        <h3>
+                            Search
+                        </h3>
+
+                        <p>
+                            Select the required blood group and
+                            location.
+                        </p>
+
+                    </div>
+
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            02
+                        </div>
+
+                        <h3>
+                            Connect
+                        </h3>
+
+                        <p>
+                            View available donor information and
+                            send a request.
+                        </p>
+
+                    </div>
+
+
+                    <div class="step">
+
+                        <div class="step-number">
+                            03
+                        </div>
+
+                        <h3>
+                            Help
+                        </h3>
+
+                        <p>
+                            Coordinate directly and help someone
+                            in need.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= BLOOD GROUPS ================= -->
+
+        <section class="blood-section" id="blood-groups">
+
+            <div class="container">
+
+                <div class="section-heading">
+
+                    <span class="section-label">
+                        BLOOD GROUPS
+                    </span>
+
+                    <h2>
+                        Know your blood type.
+                    </h2>
+
+                    <p>
+                        Browse blood groups and understand basic
+                        compatibility information.
+                    </p>
+
+                </div>
+
+
+                <div class="blood-grid">
+
+                    <button class="blood-card">
+                        <span>A+</span>
+                        <small>Positive</small>
+                    </button>
+
+                    <button class="blood-card">
+                        <span>A−</span>
+                        <small>Negative</small>
+                    </button>
+
+                    <button class="blood-card">
+                        <span>B+</span>
+                        <small>Positive</small>
+                    </button>
+
+                    <button class="blood-card">
+                        <span>B−</span>
+                        <small>Negative</small>
+                    </button>
+
+                    <button class="blood-card">
+                        <span>AB+</span>
+                        <small>Positive</small>
+                    </button>
+
+                    <button class="blood-card">
+                        <span>AB−</span>
+                        <small>Negative</small>
+                    </button>
+
+                    <button class="blood-card">
+                        <span>O+</span>
+                        <small>Positive</small>
+                    </button>
+
+                    <button class="blood-card">
+                        <span>O−</span>
+                        <small>Negative</small>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================= EMERGENCY ================= -->
+
+        <section class="emergency-section">
+
+            <div class="container">
+
+                <div class="emergency-card">
+
+                    <div>
+
+                        <span class="emergency-label">
+                            🚨 EMERGENCY BLOOD REQUEST
+                        </span>
+
+                        <h2>
+                            Need blood urgently?
+                        </h2>
+
+                        <p>
+                            Create a blood request and help potential
+                            donors understand what is needed.
+                        </p>
+
+                    </div>
+
+                    <a href="#request" class="emergency-btn">
+                        Request Blood
+                        <span>→</span>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= REQUEST BLOOD ================= -->
+
+<section class="request-section" id="request">
+
+    <div class="container">
+
+        <div class="request-header">
+
+            <span class="section-label">
+                BLOOD REQUEST
+            </span>
+
+            <h2>
+                Request blood when you need it.
+            </h2>
+
+            <p>
+                Provide the required details so potential donors
+                can understand and respond to your request.
+            </p>
+
+        </div>
+
+
+        <div class="request-wrapper">
+
+            <!-- Request information -->
+
+            <div class="request-info">
+
+                <div class="request-info-icon">
+                    🩸
+                </div>
+
+                <h3>
+                    Need blood urgently?
+                </h3>
+
+                <p>
+                    Fill in the request form with accurate information.
+                    Your request can help connect you with potential
+                    donors in your area.
+                </p>
+
+
+                <div class="request-tips">
+
+                    <div class="request-tip">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>Provide accurate details</strong>
+
+                            <small>
+                                Make sure your blood group and contact
+                                information are correct.
+                            </small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="request-tip">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>Mention the hospital</strong>
+
+                            <small>
+                                Add the hospital or medical facility
+                                where blood is required.
+                            </small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="request-tip">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>Choose the urgency</strong>
+
+                            <small>
+                                Let donors understand how soon the
+                                blood may be required.
+                            </small>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Request form -->
+
+            <div class="request-form-card">
+
+                <form id="bloodRequestForm">
+
+
+                    <!-- Patient Name -->
+
+                    <div class="form-group">
+
+                        <label for="patientName">
+                            Patient Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="patientName"
+                            placeholder="Enter patient name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Blood Group + Units -->
+
+                    <div class="form-row">
+
+                        <div class="form-group">
+
+                            <label for="requestBloodGroup">
+                                Blood Group
+                            </label>
+
+                            <select
+                                id="requestBloodGroup"
+                                required
+                            >
+
+                                <option value="">
+                                    Select blood group
+                                </option>
+
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="unitsRequired">
+                                Units Required
+                            </label>
+
+                            <input
+                                type="number"
+                                id="unitsRequired"
+                                min="1"
+                                max="10"
+                                placeholder="e.g. 2"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Hospital -->
+
+                    <div class="form-group">
+
+                        <label for="hospitalName">
+                            Hospital / Medical Center
+                        </label>
+
+                        <input
+                            type="text"
+                            id="hospitalName"
+                            placeholder="Enter hospital name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- City -->
+
+                    <div class="form-group">
+
+                        <label for="requestCity">
+                            City / Location
+                        </label>
+
+                        <input
+                            type="text"
+                            id="requestCity"
+                            placeholder="Enter city or area"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Phone -->
+
+                    <div class="form-group">
+
+                        <label for="contactNumber">
+                            Contact Number
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="contactNumber"
+                            placeholder="Enter contact number"
+                            maxlength="10"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Urgency -->
+
+                    <div class="form-group">
+
+                        <label for="urgency">
+                            Urgency Level
+                        </label>
+
+                        <select id="urgency" required>
+
+                            <option value="">
+                                Select urgency
+                            </option>
+
+                            <option value="Normal">
+                                Normal
+                            </option>
+
+                            <option value="Urgent">
+                                Urgent
+                            </option>
+
+                            <option value="Emergency">
+                                Emergency
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Required Date -->
+
+                    <div class="form-group">
+
+                        <label for="requiredDate">
+                            Required Date
+                        </label>
+
+                        <input
+                            type="date"
+                            id="requiredDate"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Message -->
+
+                    <div class="form-group">
+
+                        <label for="requestMessage">
+                            Additional Message
+                            <span class="optional">
+                                (Optional)
+                            </span>
+                        </label>
+
+                        <textarea
+                            id="requestMessage"
+                            rows="4"
+                            maxlength="300"
+                            placeholder="Add any additional information..."
+                        ></textarea>
+
+                    </div>
+
+
+                    <!-- Submit -->
+
+                    <button
+                        type="submit"
+                        class="request-submit-btn"
+                    >
+
+                        Submit Blood Request
+
+                        <span>→</span>
+
+                    </button>
+
+
+                    <p class="form-disclaimer">
+                        Please verify all information before
+                        submitting your request.
+                    </p>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= LOGIN ================= -->
+
+<section class="login-section" id="login">
+
+    <div class="container">
+
+        <div class="login-wrapper">
+
+            <!-- Login information -->
+
+            <div class="login-info">
+
+                <span class="section-label">
+                    WELCOME BACK
+                </span>
+
+                <h2>
+                    Connect with your
+                    BloodConnect account.
+                </h2>
+
+                <p>
+                    Sign in to manage your donor profile,
+                    update your availability and respond
+                    to blood requests.
+                </p>
+
+
+                <div class="login-features">
+
+                    <div class="login-feature">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>
+                                Manage your profile
+                            </strong>
+
+                            <small>
+                                Keep your donor information
+                                up to date.
+                            </small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="login-feature">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>
+                                Update availability
+                            </strong>
+
+                            <small>
+                                Let people know when you
+                                are available to donate.
+                            </small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="login-feature">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>
+                                Help save lives
+                            </strong>
+
+                            <small>
+                                Stay connected with blood
+                                requests around you.
+                            </small>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Login card -->
+
+            <div class="login-card">
+
+                <div class="login-card-header">
+
+                    <div class="login-avatar">
+                        ♥
+                    </div>
+
+                    <div>
+                        <h3>
+                            Sign in
+                        </h3>
+
+                        <p>
+                            Access your donor account
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <form id="loginForm">
+
+
+                    <!-- Email -->
+
+                    <div class="form-group">
+
+                        <label for="loginEmail">
+                            Email Address
+                        </label>
+
+                        <input
+                            type="email"
+                            id="loginEmail"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Password -->
+
+                    <div class="form-group">
+
+                        <label for="loginPassword">
+                            Password
+                        </label>
+
+                        <div class="password-wrapper">
+
+                            <input
+                                type="password"
+                                id="loginPassword"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                id="passwordToggle"
+                                aria-label="Show password"
+                            >
+                                Show
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Remember -->
+
+                    <div class="login-options">
+
+                        <label class="remember-me">
+
+                            <input
+                                type="checkbox"
+                                id="rememberMe"
+                            >
+
+                            <span>
+                                Remember me
+                            </span>
+
+                        </label>
+
+
+                        <a href="#forgot">
+                            Forgot password?
+                        </a>
+
+                    </div>
+
+
+                    <!-- Submit -->
+
+                    <button
+                        type="submit"
+                        class="login-submit-btn"
+                    >
+
+                        Sign In
+
+                        <span>→</span>
+
+                    </button>
+
+
+                    <p class="register-hint">
+
+                        Don't have an account?
+
+                        <a href="#register">
+                            Become a donor
+                        </a>
+
+                    </p>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= DONOR DASHBOARD ================= -->
+
+<section class="dashboard-section" id="dashboard">
+
+    <div class="container">
+
+        <div class="dashboard-top">
+
+            <div>
+                <span class="section-label">
+                    DONOR DASHBOARD
+                </span>
+
+                <h2>
+                    Welcome back, <span id="dashboardName">Donor</span> 👋
+                </h2>
+
+                <p>
+                    Manage your donor profile and stay connected
+                    with people who may need your help.
+                </p>
+            </div>
+
+
+            <button
+                class="dashboard-logout"
+                id="logoutBtn"
+            >
+                Logout
+            </button>
+
+        </div>
+
+
+        <div class="dashboard-layout">
+
+
+            <!-- ================= SIDEBAR ================= -->
+
+            <aside class="dashboard-sidebar">
+
+                <div class="dashboard-profile">
+
+                    <div
+                        class="dashboard-avatar"
+                        id="dashboardAvatar"
+                    >
+                        D
+                    </div>
+
+                    <strong id="sidebarName">
+                        Donor
+                    </strong>
+
+                    <small>
+                        Blood Donor
+                    </small>
+
+                </div>
+
+
+                <nav class="dashboard-nav">
+
+                    <a
+                        href="#dashboard"
+                        class="active"
+                    >
+                        <span>⌂</span>
+                        Dashboard
+                    </a>
+
+                    <a href="#register">
+                        <span>♙</span>
+                        My Profile
+                    </a>
+
+                    <a href="#donor-results">
+                        <span>♥</span>
+                        Blood Requests
+                    </a>
+
+                    <a href="#blood-history">
+                        <span>◷</span>
+                        Donation History
+                    </a>
+
+                </nav>
+
+            </aside>
+
+
+            <!-- ================= MAIN DASHBOARD ================= -->
+
+            <main class="dashboard-main">
+
+
+                <!-- Stats -->
+
+                <div class="dashboard-stats">
+
+                    <div class="dashboard-stat">
+
+                        <div class="dashboard-stat-icon">
+                            🩸
+                        </div>
+
+                        <div>
+                            <span>Blood Group</span>
+
+                            <strong id="dashboardBloodGroup">
+                                O+
+                            </strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="dashboard-stat">
+
+                        <div class="dashboard-stat-icon">
+                            ✓
+                        </div>
+
+                        <div>
+                            <span>Availability</span>
+
+                            <strong
+                                id="dashboardAvailability"
+                            >
+                                Available
+                            </strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="dashboard-stat">
+
+                        <div class="dashboard-stat-icon">
+                            ♥
+                        </div>
+
+                        <div>
+                            <span>Total Donations</span>
+
+                            <strong>
+                                4
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Availability -->
+
+                <div class="dashboard-card availability-card">
+
+                    <div>
+
+                        <span class="dashboard-card-label">
+                            DONATION STATUS
+                        </span>
+
+                        <h3>
+                            Are you available to donate?
+                        </h3>
+
+                        <p id="availabilityMessage">
+                            Your profile is currently visible
+                            to people searching for donors.
+                        </p>
+
+                    </div>
+
+
+                    <label class="availability-switch">
+
+                        <input
+                            type="checkbox"
+                            id="availabilityToggle"
+                            checked
+                        >
+
+                        <span class="switch-slider"></span>
+
+                    </label>
+
+                </div>
+
+
+                <!-- Recent requests -->
+
+                <div
+                    class="dashboard-card"
+                    id="blood-history"
+                >
+
+                    <div class="dashboard-card-header">
+
+                        <div>
+
+                            <span class="dashboard-card-label">
+                                RECENT REQUESTS
+                            </span>
+
+                            <h3>
+                                Blood requests near you
+                            </h3>
+
+                        </div>
+
+                        <a href="#donor-results">
+                            View all
+                        </a>
+
+                    </div>
+
+
+                    <div class="dashboard-request-list">
+
+
+                        <div class="dashboard-request">
+
+                            <div class="request-blood">
+                                O+
+                            </div>
+
+                            <div class="request-details">
+
+                                <strong>
+                                    Emergency Blood Requirement
+                                </strong>
+
+                                <span>
+                                    📍 Chennai · Apollo Hospital
+                                </span>
+
+                            </div>
+
+                            <span class="request-urgency emergency">
+                                Emergency
+                            </span>
+
+                        </div>
+
+
+                        <div class="dashboard-request">
+
+                            <div class="request-blood">
+                                O+
+                            </div>
+
+                            <div class="request-details">
+
+                                <strong>
+                                    Blood Required for Patient
+                                </strong>
+
+                                <span>
+                                    📍 Chennai · City Hospital
+                                </span>
+
+                            </div>
+
+                            <span class="request-urgency urgent">
+                                Urgent
+                            </span>
+
+                        </div>
+
+
+                        <div class="dashboard-request">
+
+                            <div class="request-blood">
+                                A+
+                            </div>
+
+                            <div class="request-details">
+
+                                <strong>
+                                    Blood Donation Request
+                                </strong>
+
+                                <span>
+                                    📍 Chennai · MIOT Hospital
+                                </span>
+
+                            </div>
+
+                            <span class="request-urgency normal">
+                                Normal
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Donation history -->
+
+                <div class="dashboard-card">
+
+                    <div class="dashboard-card-header">
+
+                        <div>
+
+                            <span class="dashboard-card-label">
+                                DONATION HISTORY
+                            </span>
+
+                            <h3>
+                                Your recent donations
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="donation-history">
+
+                        <div class="history-item">
+
+                            <div class="history-date">
+                                <strong>12</strong>
+                                <small>JUN</small>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Blood Donation
+                                </strong>
+
+                                <span>
+                                    City Blood Bank · Chennai
+                                </span>
+                            </div>
+
+                            <span class="history-status">
+                                Completed
+                            </span>
+
+                        </div>
+
+
+                        <div class="history-item">
+
+                            <div class="history-date">
+                                <strong>08</strong>
+                                <small>MAR</small>
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Blood Donation
+                                </strong>
+
+                                <span>
+                                    Government Blood Bank · Chennai
+                                </span>
+                            </div>
+
+                            <span class="history-status">
+                                Completed
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </main>
+
+        </div>
+
+    </div>
+
+</section>
+
+        <!-- ================= DONOR REGISTRATION ================= -->
+
+<section class="register-section" id="register">
+
+    <div class="container">
+
+        <div class="register-header">
+
+            <span class="section-label">
+                BECOME A DONOR
+            </span>
+
+            <h2>
+                Your blood can be someone's second chance.
+            </h2>
+
+            <p>
+                Register as a donor and help people find the
+                blood they need when it matters most.
+            </p>
+
+        </div>
+
+
+        <div class="register-wrapper">
+
+            <!-- Registration information -->
+
+            <div class="register-info">
+
+                <div class="register-icon">
+                    ♥
+                </div>
+
+                <h3>
+                    Make a difference.
+                </h3>
+
+                <p>
+                    Becoming a donor takes only a few minutes.
+                    Once registered, you can manage your availability
+                    and respond to blood requests.
+                </p>
+
+
+                <div class="donor-benefits">
+
+                    <div class="benefit-item">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>Help nearby patients</strong>
+
+                            <small>
+                                Connect with people who may need
+                                your blood group.
+                            </small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="benefit-item">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>Control your availability</strong>
+
+                            <small>
+                                You decide when you are available
+                                to donate.
+                            </small>
+                        </div>
+
+                    </div>
+
+
+                    <div class="benefit-item">
+
+                        <span>✓</span>
+
+                        <div>
+                            <strong>Keep your profile updated</strong>
+
+                            <small>
+                                Update your location and donation
+                                information whenever needed.
+                            </small>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="donor-note">
+
+                    <span>ℹ</span>
+
+                    <p>
+                        Please register only if you are eligible
+                        and medically fit to donate blood.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Registration form -->
+
+            <div class="register-form-card">
+
+                <form id="donorRegistrationForm">
+
+
+                    <!-- Full Name -->
+
+                    <div class="form-group">
+
+                        <label for="donorName">
+                            Full Name
+                        </label>
+
+                        <input
+                            type="text"
+                            id="donorName"
+                            placeholder="Enter your full name"
+                            autocomplete="name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Email -->
+
+                    <div class="form-group">
+
+                        <label for="donorEmail">
+                            Email Address
+                        </label>
+
+                        <input
+                            type="email"
+                            id="donorEmail"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Password -->
+
+                    <div class="form-group">
+
+                        <label for="donorPassword">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="donorPassword"
+                            placeholder="Create a password"
+                            minlength="6"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- Phone + Age -->
+
+                    <div class="form-row">
+
+                        <div class="form-group">
+
+                            <label for="donorPhone">
+                                Phone Number
+                            </label>
+
+                            <input
+                                type="tel"
+                                id="donorPhone"
+                                placeholder="10-digit number"
+                                maxlength="10"
+                                autocomplete="tel"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="donorAge">
+                                Age
+                            </label>
+
+                            <input
+                                type="number"
+                                id="donorAge"
+                                min="18"
+                                max="65"
+                                placeholder="e.g. 24"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Blood Group + Gender -->
+
+                    <div class="form-row">
+
+                        <div class="form-group">
+
+                            <label for="donorBloodGroup">
+                                Blood Group
+                            </label>
+
+                            <select
+                                id="donorBloodGroup"
+                                required
+                            >
+
+                                <option value="">
+                                    Select blood group
+                                </option>
+
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="donorGender">
+                                Gender
+                            </label>
+
+                            <select
+                                id="donorGender"
+                                required
+                            >
+
+                                <option value="">
+                                    Select gender
+                                </option>
+
+                                <option value="Male">
+                                    Male
+                                </option>
+
+                                <option value="Female">
+                                    Female
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                                <option value="Prefer not to say">
+                                    Prefer not to say
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- City + Area -->
+
+                    <div class="form-row">
+
+                        <div class="form-group">
+
+                            <label for="donorCity">
+                                City
+                            </label>
+
+                            <input
+                                type="text"
+                                id="donorCity"
+                                placeholder="e.g. Chennai"
+                                autocomplete="address-level2"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="donorArea">
+                                Area
+                            </label>
+
+                            <input
+                                type="text"
+                                id="donorArea"
+                                placeholder="e.g. Anna Nagar"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Last Donation -->
+
+                    <div class="form-group">
+
+                        <label for="lastDonationDate">
+                            Last Blood Donation
+                            <span class="optional">
+                                (If applicable)
+                            </span>
+                        </label>
+
+                        <input
+                            type="date"
+                            id="lastDonationDate"
+                        >
+
+                    </div>
+
+
+                    <!-- Availability -->
+
+                    <div class="form-group">
+
+                        <label for="donorAvailability">
+                            Donation Availability
+                        </label>
+
+                        <select
+                            id="donorAvailability"
+                            required
+                        >
+
+                            <option value="">
+                                Select availability
+                            </option>
+
+                            <option value="Available">
+                                Available to donate
+                            </option>
+
+                            <option value="Unavailable">
+                                Not available currently
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- Terms -->
+
+                    <label class="terms-checkbox">
+
+                        <input
+                            type="checkbox"
+                            id="donorTerms"
+                            required
+                        >
+
+                        <span>
+                            I confirm that the information provided
+                            is accurate and I agree to the BloodConnect
+                            terms.
+                        </span>
+
+                    </label>
+
+
+                    <!-- Submit -->
+
+                    <button
+                        type="submit"
+                        class="register-submit-btn"
+                    >
+
+                        Create Donor Account
+
+                        <span>→</span>
+
+                    </button>
+
+
+                    <p class="login-hint">
+                        Already registered?
+                        <a href="#login">
+                            Login here
+                        </a>
+                    </p>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+    </main>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer class="footer">
+
+        <div class="container footer-grid">
+
+            <div class="footer-brand">
+
+                <a href="#" class="logo footer-logo">
+                    <span class="logo-icon">♥</span>
+                    <span>Blood<span class="logo-highlight">Connect</span></span>
+                </a>
+
+                <p>
+                    Connecting people, donors and communities
+                    through technology.
+                </p>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <h4>Platform</h4>
+
+                <a href="#find-donor">Find Donor</a>
+                <a href="#register">Become a Donor</a>
+                <a href="#request">Request Blood</a>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <h4>Information</h4>
+
+                <a href="#how-it-works">How It Works</a>
+                <a href="#blood-groups">Blood Groups</a>
+                <a href="#about">About Us</a>
+
+            </div>
+
+
+            <div class="footer-links">
+
+                <h4>Support</h4>
+
+                <a href="#">Contact</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+
+            </div>
+
+        </div>
+
+
+        <div class="container footer-bottom">
+
+            <p>
+                © 2026 BloodConnect. Built to connect people.
+            </p>
+
+            <p>
+                For informational purposes only.
+            </p>
+
+        </div>
+
+    </footer>
+
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>
