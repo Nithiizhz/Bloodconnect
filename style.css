@@ -4271,3 +4271,391 @@ body,
     }
 
 }
+
+/* =====================================================
+   DONOR PROFILE MODAL
+   ===================================================== */
+
+#donorProfileModal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+}
+
+.profile-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.68);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 24px;
+
+    animation: profileOverlayIn 0.25s ease;
+}
+
+.profile-modal {
+    position: relative;
+
+    width: min(520px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+
+    background: var(--card-bg, #ffffff);
+    color: var(--text, #111827);
+
+    border-radius: 24px;
+    padding: 34px;
+
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.25);
+
+    animation: profileModalIn 0.3s ease;
+}
+
+/* Close button */
+
+.profile-modal-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+
+    width: 38px;
+    height: 38px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: var(--background, #f1f5f9);
+    color: var(--text, #111827);
+
+    font-size: 25px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.profile-modal-close:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    transform: rotate(90deg);
+}
+
+/* Avatar */
+
+.profile-avatar {
+    width: 88px;
+    height: 88px;
+
+    margin: 0 auto 18px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: linear-gradient(
+        135deg,
+        #ef4444,
+        #b91c1c
+    );
+
+    color: #ffffff;
+
+    font-size: 36px;
+    font-weight: 800;
+
+    box-shadow:
+        0 10px 25px rgba(220, 38, 38, 0.25);
+}
+
+.profile-modal h2 {
+    margin: 0;
+
+    text-align: center;
+
+    font-size: 27px;
+    font-weight: 750;
+
+    letter-spacing: -0.5px;
+}
+
+.profile-location {
+    margin: 7px 0 16px;
+
+    text-align: center;
+
+    color: var(--muted, #64748b);
+
+    font-size: 14px;
+}
+
+/* Availability */
+
+.profile-status {
+    width: fit-content;
+
+    margin: 0 auto 26px;
+
+    padding: 8px 15px;
+
+    border-radius: 999px;
+
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.profile-status.available {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+}
+
+.profile-status.unavailable {
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748b;
+}
+
+/* Details grid */
+
+.profile-details {
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 26px;
+}
+
+.profile-detail {
+    display: flex;
+    align-items: center;
+
+    gap: 13px;
+
+    padding: 15px;
+
+    border: 1px solid var(--border, #e2e8f0);
+
+    border-radius: 15px;
+
+    background: var(
+        --input-bg,
+        rgba(248, 250, 252, 0.8)
+    );
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.profile-detail:hover {
+    transform: translateY(-2px);
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+.profile-detail > span {
+    width: 38px;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    background: rgba(220, 38, 38, 0.09);
+
+    font-size: 18px;
+}
+
+.profile-detail div {
+    min-width: 0;
+}
+
+.profile-detail strong {
+    display: block;
+
+    margin-bottom: 3px;
+
+    font-size: 14px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-detail small {
+    display: block;
+
+    color: var(--muted, #64748b);
+
+    font-size: 11px;
+}
+
+/* Request button */
+
+.profile-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.profile-request-btn {
+    width: 100%;
+
+    border: none;
+    border-radius: 13px;
+
+    padding: 14px 20px;
+
+    background: linear-gradient(
+        135deg,
+        #dc2626,
+        #b91c1c
+    );
+
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 20px rgba(220, 38, 38, 0.22);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.profile-request-btn:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 12px 26px rgba(220, 38, 38, 0.3);
+}
+
+.profile-request-btn:active {
+    transform: translateY(0);
+}
+
+.profile-request-btn:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Animations */
+
+@keyframes profileOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes profileModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+
+    .profile-modal-overlay {
+        padding: 16px;
+    }
+
+    .profile-modal {
+        padding: 28px 20px 22px;
+        border-radius: 20px;
+    }
+
+    .profile-avatar {
+        width: 76px;
+        height: 76px;
+        font-size: 30px;
+    }
+
+    .profile-modal h2 {
+        font-size: 23px;
+    }
+
+    .profile-details {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .profile-detail {
+        padding: 13px;
+    }
+}
+
+/* =====================================================
+   DONOR PROFILE - DARK MODE FIX
+   ===================================================== */
+
+[data-theme="dark"] .profile-modal {
+    background: #111827;
+    color: #f8fafc;
+    border: 1px solid #273449;
+}
+
+[data-theme="dark"] .profile-modal h2 {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .profile-location {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .profile-detail {
+    background: #172033;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .profile-detail strong {
+    color: #f8fafc;
+}
+
+[data-theme="dark"] .profile-detail small {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .profile-detail:hover {
+    border-color: #ef4444;
+}
+
+[data-theme="dark"] .profile-modal-close {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .profile-modal-close:hover {
+    background: #3f1d24;
+    color: #f87171;
+}
