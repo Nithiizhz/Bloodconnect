@@ -8,15 +8,12 @@ const bcrypt = require("bcrypt");
 const app = express();
 const PORT = 3000;
 
-
 /* =====================================================
    MIDDLEWARE
    ===================================================== */
 
 app.use(express.json());
 app.use(cors());
-
-/* Serve frontend files */
 app.use(express.static(__dirname));
 
 
@@ -33,25 +30,48 @@ const db = mysql.createConnection({
 
 
 /* =====================================================
-   CONNECT TO MYSQL
+   MYSQL CONNECT
    ===================================================== */
 
 db.connect((err) => {
-
     if (err) {
-
-        console.log(
-            "MySQL connection failed:",
-            err.message
-        );
-
+        console.log("MySQL connection failed:", err.message);
         return;
     }
 
-    console.log(
-        "MySQL connected successfully!"
-    );
+    console.log("MySQL connected successfully!");
 
+    /*
+     * BACKFILL OLD REQUESTS
+     *
+     * Older blood requests may have requester_id = NULL.
+     * We try to identify those requests using the
+     * contact_number stored in the request.
+     */
+
+    const backfillSql = `
+        UPDATE blood_requests br
+        JOIN donors d
+            ON d.phone = br.contact_number
+        SET br.requester_id = d.id
+        WHERE br.requester_id IS NULL
+    `;
+
+    db.query(backfillSql, (backfillErr, result) => {
+        if (backfillErr) {
+            console.log(
+                "Requester ID backfill error:",
+                backfillErr.message
+            );
+            return;
+        }
+
+        if (result.affectedRows > 0) {
+            console.log(
+                `Requester IDs backfilled: ${result.affectedRows}`
+            );
+        }
+    });
 });
 
 
@@ -60,11 +80,7 @@ db.connect((err) => {
    ===================================================== */
 
 app.get("/", (req, res) => {
-
-    res.sendFile(
-        __dirname + "/index.html"
-    );
-
+    res.sendFile(__dirname + "/index.html");
 });
 
 
@@ -73,9 +89,7 @@ app.get("/", (req, res) => {
    ===================================================== */
 
 app.post("/api/donors", async (req, res) => {
-
     try {
-
         const {
             name,
             email,
@@ -90,9 +104,6 @@ app.post("/api/donors", async (req, res) => {
             availability
         } = req.body;
 
-
-        /* Validate required fields */
-
         if (
             !name ||
             !email ||
@@ -105,98 +116,52 @@ app.post("/api/donors", async (req, res) => {
             !area ||
             !availability
         ) {
-
             return res.status(400).json({
-
                 success: false,
-
-                message:
-                    "Please fill all required fields."
-
+                message: "Please fill all required fields."
             });
-
         }
 
-
-        /* Validate phone number */
-
-        const phonePattern =
-            /^[0-9]{10}$/;
-
+        const phonePattern = /^[0-9]{10}$/;
 
         if (!phonePattern.test(phone)) {
-
             return res.status(400).json({
-
                 success: false,
-
-                message:
-                    "Please enter a valid 10-digit phone number."
-
+                message: "Please enter a valid 10-digit phone number."
             });
-
         }
-
-
-        /* Check duplicate email */
 
         const checkSql =
             "SELECT id FROM donors WHERE email = ?";
-
 
         db.query(
             checkSql,
             [email],
             async (checkErr, existingUsers) => {
-
                 if (checkErr) {
-
                     console.log(
                         "Email check error:",
                         checkErr.message
                     );
 
                     return res.status(500).json({
-
                         success: false,
-
-                        message:
-                            "Database error."
-
+                        message: "Database error."
                     });
-
                 }
-
 
                 if (existingUsers.length > 0) {
-
                     return res.status(409).json({
-
                         success: false,
-
-                        message:
-                            "Email is already registered."
-
+                        message: "Email is already registered."
                     });
-
                 }
 
-
-                /* Hash password */
-
                 const hashedPassword =
-                    await bcrypt.hash(
-                        password,
-                        10
-                    );
-
-
-                /* Insert donor */
+                    await bcrypt.hash(password, 10);
 
                 const sql = `
-
                     INSERT INTO donors
-
                     (
                         name,
                         email,
@@ -210,103 +175,62 @@ app.post("/api/donors", async (req, res) => {
                         last_donation_date,
                         availability
                     )
-
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-
                 `;
 
-
                 const values = [
-
                     name,
-
                     email,
-
                     hashedPassword,
-
                     phone,
-
                     age,
-
                     blood_group,
-
                     gender,
-
                     city,
-
                     area,
-
                     last_donation_date || null,
-
-                    availability === "Available"
-                        ? 1
-                        : 0
-
+                    availability === "Available" ? 1 : 0
                 ];
-
 
                 db.query(
                     sql,
                     values,
                     (err, result) => {
-
                         if (err) {
-
                             console.log(
                                 "Donor registration error:",
                                 err.message
                             );
 
                             return res.status(500).json({
-
                                 success: false,
-
                                 message:
                                     "Donor registration failed."
-
                             });
-
                         }
 
-
                         res.status(201).json({
-
                             success: true,
-
                             message:
                                 "Donor registered successfully!",
-
-                            donorId:
-                                result.insertId
-
+                            donorId: result.insertId
                         });
-
                     }
                 );
-
             }
         );
 
-
     } catch (error) {
-
         console.log(
             "Registration error:",
             error.message
         );
 
-
         res.status(500).json({
-
             success: false,
-
-            message:
-                "Something went wrong."
-
+            message: "Something went wrong."
         });
-
     }
-
 });
 
 
@@ -314,361 +238,224 @@ app.post("/api/donors", async (req, res) => {
    LOGIN API
    ===================================================== */
 
-app.post(
-    "/api/auth/login",
-    (req, res) => {
+app.post("/api/auth/login", (req, res) => {
+    const {
+        email,
+        password
+    } = req.body;
 
-        const {
-            email,
-            password
-        } = req.body;
-
-
-        if (!email || !password) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "Email and password are required."
-
-            });
-
-        }
-
-
-        const sql = `
-
-            SELECT
-
-                id,
-                name,
-                email,
-                password,
-                phone,
-                age,
-                blood_group,
-                gender,
-                city,
-                area,
-                last_donation_date,
-                availability
-
-            FROM donors
-
-            WHERE email = ?
-
-            LIMIT 1
-
-        `;
-
-
-        db.query(
-            sql,
-            [email],
-            async (err, results) => {
-
-                if (err) {
-
-                    console.log(
-                        "Login database error:",
-                        err.message
-                    );
-
-                    return res.status(500).json({
-
-                        success: false,
-
-                        message:
-                            "Login failed."
-
-                    });
-
-                }
-
-
-                if (results.length === 0) {
-
-                    return res.status(401).json({
-
-                        success: false,
-
-                        message:
-                            "Invalid email or password."
-
-                    });
-
-                }
-
-
-                const donor =
-                    results[0];
-
-
-                /* Compare password */
-
-                const passwordMatch =
-                    await bcrypt.compare(
-                        password,
-                        donor.password
-                    );
-
-
-                if (!passwordMatch) {
-
-                    return res.status(401).json({
-
-                        success: false,
-
-                        message:
-                            "Invalid email or password."
-
-                    });
-
-                }
-
-
-                /* Never send password */
-
-                delete donor.password;
-
-
-                res.json({
-
-                    success: true,
-
-                    message:
-                        "Login successful!",
-
-                    donor: donor
-
-                });
-
-            }
-        );
-
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message:
+                "Email and password are required."
+        });
     }
-);
+
+    const sql = `
+        SELECT
+            id,
+            name,
+            email,
+            password,
+            phone,
+            age,
+            blood_group,
+            gender,
+            city,
+            area,
+            last_donation_date,
+            availability
+        FROM donors
+        WHERE email = ?
+        LIMIT 1
+    `;
+
+    db.query(
+        sql,
+        [email],
+        async (err, results) => {
+            if (err) {
+                console.log(
+                    "Login database error:",
+                    err.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    message: "Login failed."
+                });
+            }
+
+            if (results.length === 0) {
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        "Invalid email or password."
+                });
+            }
+
+            const donor = results[0];
+
+            const passwordMatch =
+                await bcrypt.compare(
+                    password,
+                    donor.password
+                );
+
+            if (!passwordMatch) {
+                return res.status(401).json({
+                    success: false,
+                    message:
+                        "Invalid email or password."
+                });
+            }
+
+            delete donor.password;
+
+            res.json({
+                success: true,
+                message: "Login successful!",
+                donor: donor
+            });
+        }
+    );
+});
 
 
 /* =====================================================
    DONOR SEARCH API
    ===================================================== */
 
-app.get(
-    "/api/donors",
-    (req, res) => {
+app.get("/api/donors", (req, res) => {
+    const {
+        bloodGroup,
+        location
+    } = req.query;
 
-        const {
-            bloodGroup,
-            location
-        } = req.query;
+    let sql = `
+        SELECT
+            id,
+            name,
+            email,
+            phone,
+            blood_group,
+            gender,
+            city,
+            area,
+            age,
+            last_donation_date,
+            availability
+        FROM donors
+        WHERE availability = 1
+    `;
 
+    const values = [];
 
-        let sql = `
+    if (bloodGroup) {
+        sql += " AND blood_group = ?";
+        values.push(bloodGroup);
+    }
 
-            SELECT
-
-                id,
-                name,
-                email,
-                phone,
-                blood_group,
-                gender,
-                city,
-                area,
-                age,
-                last_donation_date,
-                availability
-
-            FROM donors
-
-            WHERE availability = 1
-
+    if (location) {
+        sql += `
+            AND (
+                city LIKE ?
+                OR area LIKE ?
+            )
         `;
 
+        const searchLocation =
+            `%${location}%`;
 
-        const values = [];
-
-
-        /* Blood group filter */
-
-        if (bloodGroup) {
-
-            sql +=
-                " AND blood_group = ?";
-
-            values.push(
-                bloodGroup
-            );
-
-        }
-
-
-        /* City / area filter */
-
-        if (location) {
-
-            sql += `
-
-                AND (
-
-                    city LIKE ?
-
-                    OR area LIKE ?
-
-                )
-
-            `;
-
-
-            const searchLocation =
-                `%${location}%`;
-
-
-            values.push(
-                searchLocation
-            );
-
-            values.push(
-                searchLocation
-            );
-
-        }
-
-
-        sql +=
-            " ORDER BY id DESC";
-
-
-        db.query(
-            sql,
-            values,
-            (err, results) => {
-
-                if (err) {
-
-                    console.log(
-                        "Donor search error:",
-                        err.message
-                    );
-
-                    return res.status(500).json({
-
-                        success: false,
-
-                        message:
-                            "Unable to search donors."
-
-                    });
-
-                }
-
-
-                res.json({
-
-                    success: true,
-
-                    donors: results
-
-                });
-
-            }
-        );
-
+        values.push(searchLocation);
+        values.push(searchLocation);
     }
-);
+
+    sql += " ORDER BY id DESC";
+
+    db.query(
+        sql,
+        values,
+        (err, results) => {
+            if (err) {
+                console.log(
+                    "Donor search error:",
+                    err.message
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Unable to search donors."
+                });
+            }
+
+            res.json({
+                success: true,
+                donors: results
+            });
+        }
+    );
+});
 
 
 /* =====================================================
    GET SINGLE DONOR
    ===================================================== */
 
-app.get(
-    "/api/donors/:id",
-    (req, res) => {
+app.get("/api/donors/:id", (req, res) => {
+    const donorId = req.params.id;
 
-        const donorId =
-            req.params.id;
+    const sql = `
+        SELECT
+            id,
+            name,
+            email,
+            phone,
+            blood_group,
+            gender,
+            city,
+            area,
+            age,
+            last_donation_date,
+            availability
+        FROM donors
+        WHERE id = ?
+        LIMIT 1
+    `;
 
+    db.query(
+        sql,
+        [donorId],
+        (err, results) => {
+            if (err) {
+                console.log(
+                    "Get donor error:",
+                    err.message
+                );
 
-        const sql = `
-
-            SELECT
-
-                id,
-                name,
-                email,
-                phone,
-                blood_group,
-                gender,
-                city,
-                area,
-                age,
-                last_donation_date,
-                availability
-
-            FROM donors
-
-            WHERE id = ?
-
-            LIMIT 1
-
-        `;
-
-
-        db.query(
-            sql,
-            [donorId],
-            (err, results) => {
-
-                if (err) {
-
-                    console.log(
-                        "Get donor error:",
-                        err.message
-                    );
-
-                    return res.status(500).json({
-
-                        success: false,
-
-                        message:
-                            "Unable to get donor details."
-
-                    });
-
-                }
-
-
-                if (results.length === 0) {
-
-                    return res.status(404).json({
-
-                        success: false,
-
-                        message:
-                            "Donor not found."
-
-                    });
-
-                }
-
-
-                res.json({
-
-                    success: true,
-
-                    donor: results[0]
-
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Unable to get donor details."
                 });
-
             }
-        );
 
-    }
-);
+            if (results.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Donor not found."
+                });
+            }
+
+            res.json({
+                success: true,
+                donor: results[0]
+            });
+        }
+    );
+});
 
 
 /* =====================================================
@@ -679,42 +466,28 @@ app.put(
     "/api/donors/:id/availability",
     (req, res) => {
 
-        const donorId =
-            req.params.id;
-
+        const donorId = req.params.id;
 
         const {
             availability
         } = req.body;
 
-
         if (
             availability !== 0 &&
             availability !== 1
         ) {
-
             return res.status(400).json({
-
                 success: false,
-
                 message:
                     "Invalid availability value."
-
             });
-
         }
 
-
         const sql = `
-
             UPDATE donors
-
             SET availability = ?
-
             WHERE id = ?
-
         `;
-
 
         db.query(
             sql,
@@ -725,375 +498,599 @@ app.put(
             (err, result) => {
 
                 if (err) {
-
                     console.log(
                         "Availability update error:",
                         err.message
                     );
 
                     return res.status(500).json({
-
                         success: false,
-
                         message:
                             "Unable to update availability."
-
                     });
-
                 }
-
 
                 if (
                     result.affectedRows === 0
                 ) {
-
                     return res.status(404).json({
-
                         success: false,
-
                         message:
                             "Donor not found."
-
                     });
-
                 }
 
-
                 res.json({
-
                     success: true,
-
                     message:
                         "Availability updated successfully!"
-
                 });
-
             }
         );
-
     }
 );
 
 
 /* =====================================================
-   BLOOD REQUEST API
+   CREATE BLOOD REQUEST
    ===================================================== */
 
 app.post(
     "/api/blood-requests",
     (req, res) => {
 
-        const {
-
+        let {
+            requester_id,
+            requester_email,
+            requester_name,
             donor_id,
-
             patient_name,
-
             blood_group,
-
             units_required,
-
             hospital_name,
-
             city,
-
             contact_number,
-
             urgency,
-
             required_date,
-
             message
-
         } = req.body;
 
 
-        /* Validate required fields */
+        /*
+         * requester_id = person creating the request
+         * donor_id     = selected donor
+         * patient_name = patient needing blood
+         */
+
+
+        /* =================================================
+           REQUIRED FIELD VALIDATION
+           ================================================= */
 
         if (
-
             !patient_name ||
-
             !blood_group ||
-
             !units_required ||
-
             !hospital_name ||
-
             !city ||
-
             !contact_number ||
-
             !urgency ||
-
             !required_date
-
         ) {
-
             return res.status(400).json({
-
                 success: false,
-
                 message:
                     "Please fill all required blood request fields."
-
             });
-
         }
 
 
-        /* Validate phone */
+        /* =================================================
+           PHONE VALIDATION
+           ================================================= */
 
         const phonePattern =
             /^[0-9]{10}$/;
-
 
         if (
             !phonePattern.test(
                 contact_number
             )
         ) {
-
             return res.status(400).json({
-
                 success: false,
-
                 message:
                     "Please enter a valid 10-digit contact number."
-
             });
-
         }
 
 
         /*
-         * Insert blood request
+         * =================================================
+         * CONTINUE REQUEST AFTER REQUESTER IS IDENTIFIED
+         * =================================================
          */
 
-        const continueRequest = () => {
+        const continueWithRequester =
+            (requester) => {
 
-            const sql = `
-
-                INSERT INTO blood_requests
-
-                (
-                    donor_id,
-                    patient_name,
-                    blood_group,
-                    units_required,
-                    hospital_name,
-                    city,
-                    contact_number,
-                    urgency,
-                    required_date,
-                    message,
-                    status
-                )
-
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
-
-            `;
+                requester_id =
+                    requester.id;
 
 
-            const values = [
+                /*
+                 * =================================================
+                 * INSERT BLOOD REQUEST
+                 * =================================================
+                 */
 
-                donor_id || null,
+                const continueRequest =
+                    () => {
 
-                patient_name,
-
-                blood_group,
-
-                units_required,
-
-                hospital_name,
-
-                city,
-
-                contact_number,
-
-                urgency,
-
-                required_date,
-
-                message || null
-
-            ];
-
-
-            db.query(
-                sql,
-                values,
-                (err, result) => {
-
-                    if (err) {
-
-                        console.log(
-                            "Blood request error:",
-                            err.message
-                        );
-
-                        return res.status(500).json({
-
-                            success: false,
-
-                            message:
-                                "Blood request submission failed."
-
-                        });
-
-                    }
+                        const sql = `
+                            INSERT INTO blood_requests
+                            (
+                                requester_id,
+                                donor_id,
+                                patient_name,
+                                blood_group,
+                                units_required,
+                                hospital_name,
+                                city,
+                                contact_number,
+                                urgency,
+                                required_date,
+                                message,
+                                status
+                            )
+                            VALUES
+                            (
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                ?,
+                                'Pending'
+                            )
+                        `;
 
 
-                    res.status(201).json({
-
-                        success: true,
-
-                        message:
-                            "Blood request submitted successfully!",
-
-                        requestId:
-                            result.insertId,
-
-                        donorId:
+                        const values = [
+                            requester_id,
                             donor_id || null,
+                            patient_name,
+                            blood_group,
+                            units_required,
+                            hospital_name,
+                            city,
+                            contact_number,
+                            urgency,
+                            required_date,
+                            message || null
+                        ];
 
-                        status:
-                            "Pending"
 
-                    });
+                        db.query(
+                            sql,
+                            values,
+                            (err, result) => {
 
+                                if (err) {
+
+                                    console.log(
+                                        "Blood request error:",
+                                        err.message
+                                    );
+
+
+                                    return res.status(500).json({
+                                        success: false,
+                                        message:
+                                            "Blood request submission failed."
+                                    });
+                                }
+
+
+                                /*
+                                 * Return complete request information.
+                                 */
+
+                                res.status(201).json({
+
+                                    success: true,
+
+                                    message:
+                                        "Blood request submitted successfully!",
+
+                                    requestId:
+                                        result.insertId,
+
+                                    requesterId:
+                                        requester_id,
+
+                                    requesterName:
+                                        requester.name,
+
+                                    requesterPhone:
+                                        requester.phone,
+
+                                    donorId:
+                                        donor_id || null,
+
+                                    status:
+                                        "Pending"
+                                });
+                            }
+                        );
+                    };
+
+
+                /*
+                 * =================================================
+                 * NO SELECTED DONOR
+                 * =================================================
+                 */
+
+                if (!donor_id) {
+                    return continueRequest();
                 }
+
+
+                /*
+                 * =================================================
+                 * VERIFY SELECTED DONOR
+                 * =================================================
+                 */
+
+                const donorSql = `
+                    SELECT
+                        id,
+                        name,
+                        blood_group,
+                        availability
+                    FROM donors
+                    WHERE id = ?
+                    LIMIT 1
+                `;
+
+
+                db.query(
+                    donorSql,
+                    [donor_id],
+                    (err, results) => {
+
+                        if (err) {
+
+                            console.log(
+                                "Donor validation error:",
+                                err.message
+                            );
+
+
+                            return res.status(500).json({
+                                success: false,
+                                message:
+                                    "Unable to verify selected donor."
+                            });
+                        }
+
+
+                        if (
+                            results.length === 0
+                        ) {
+
+                            return res.status(404).json({
+                                success: false,
+                                message:
+                                    "Selected donor was not found."
+                            });
+                        }
+
+
+                        const donor =
+                            results[0];
+
+
+                        /*
+                         * Check donor availability.
+                         */
+
+                        if (
+                            donor.availability !== 1
+                        ) {
+
+                            return res.status(409).json({
+                                success: false,
+                                message:
+                                    `${donor.name} is currently unavailable.`
+                            });
+                        }
+
+
+                        /*
+                         * Check blood group.
+                         */
+
+                        if (
+                            donor.blood_group !==
+                            blood_group
+                        ) {
+
+                            return res.status(400).json({
+                                success: false,
+                                message:
+                                    "Selected donor blood group does not match the request."
+                            });
+                        }
+
+
+                        /*
+                         * Requester and donor
+                         * cannot be the same account.
+                         */
+
+                        if (
+                            Number(requester_id) ===
+                            Number(donor_id)
+                        ) {
+
+                            return res.status(400).json({
+                                success: false,
+                                message:
+                                    "You cannot request blood from your own account."
+                            });
+                        }
+
+
+                        /*
+                         * Everything is valid.
+                         */
+
+                        continueRequest();
+                    }
+                );
+            };
+
+
+        /*
+         * =================================================
+         * REQUESTER LOOKUP HELPER
+         * =================================================
+         */
+
+        const verifyRequester =
+            (
+                requesterSql,
+                lookupValue
+            ) => {
+
+                db.query(
+                    requesterSql,
+                    [lookupValue],
+                    (
+                        requesterErr,
+                        requesterResults
+                    ) => {
+
+                        if (requesterErr) {
+
+                            console.log(
+                                "Requester validation error:",
+                                requesterErr.message
+                            );
+
+
+                            return res.status(500).json({
+                                success: false,
+                                message:
+                                    "Unable to verify requester."
+                            });
+                        }
+
+
+                        if (
+                            requesterResults.length === 0
+                        ) {
+
+                            return res.status(404).json({
+                                success: false,
+                                message:
+                                    "Requester account was not found."
+                            });
+                        }
+
+
+                        continueWithRequester(
+                            requesterResults[0]
+                        );
+                    }
+                );
+            };
+
+
+        /*
+         * =================================================
+         * OPTION 1
+         * REQUESTER ID FROM FRONTEND
+         * =================================================
+         */
+
+        if (requester_id) {
+
+            verifyRequester(
+
+                `
+                    SELECT
+                        id,
+                        name,
+                        email,
+                        phone
+                    FROM donors
+                    WHERE id = ?
+                    LIMIT 1
+                `,
+
+                requester_id
             );
 
-        };
-
-
-        /*
-         * No specific donor selected.
-         * Allow general blood request.
-         */
-
-        if (!donor_id) {
-
-            return continueRequest();
-
+            return;
         }
 
 
         /*
-         * Specific donor selected.
-         * Check donor before saving request.
+         * =================================================
+         * OPTION 2
+         * REQUESTER EMAIL
+         * =================================================
          */
 
-        const donorSql = `
+        if (requester_email) {
 
-            SELECT
+            verifyRequester(
 
-                id,
-                name,
-                blood_group,
-                availability
+                `
+                    SELECT
+                        id,
+                        name,
+                        email,
+                        phone
+                    FROM donors
+                    WHERE email = ?
+                    LIMIT 1
+                `,
 
-            FROM donors
+                requester_email
+            );
 
-            WHERE id = ?
+            return;
+        }
 
-            LIMIT 1
 
-        `;
+        /*
+         * =================================================
+         * OPTION 3
+         * REQUESTER NAME
+         * =================================================
+         */
 
+        if (requester_name) {
+
+            verifyRequester(
+
+                `
+                    SELECT
+                        id,
+                        name,
+                        email,
+                        phone
+                    FROM donors
+                    WHERE LOWER(name) = LOWER(?)
+                    LIMIT 1
+                `,
+
+                requester_name
+            );
+
+            return;
+        }
+
+
+        /*
+         * =================================================
+         * OPTION 4
+         * TWO-ACCOUNT DEMO FALLBACK
+         * =================================================
+         *
+         * Your current BloodConnect demo has:
+         *
+         * ID 1 -> Nithish
+         * ID 2 -> Digeesh
+         *
+         * If requester_id is missing, we look for accounts
+         * other than the selected donor.
+         *
+         * If exactly ONE account exists, that account becomes
+         * the requester.
+         *
+         * Example:
+         *
+         * Digeesh -> Nithish
+         *
+         * donor_id = 1
+         * only other account = ID 2
+         * requester_id = 2
+         *
+         * This is only a fallback for the current two-account
+         * demo. When requester_id is supplied normally, this
+         * fallback is never used.
+         */
 
         db.query(
-            donorSql,
-            [donor_id],
-            (err, results) => {
 
-                if (err) {
+            `
+                SELECT
+                    id,
+                    name,
+                    email,
+                    phone
+                FROM donors
+                WHERE id <> ?
+                ORDER BY id ASC
+            `,
+
+            [donor_id || 0],
+
+            (
+                fallbackErr,
+                fallbackResults
+            ) => {
+
+                if (fallbackErr) {
 
                     console.log(
-                        "Donor validation error:",
-                        err.message
+                        "Requester fallback error:",
+                        fallbackErr.message
                     );
 
+
                     return res.status(500).json({
-
                         success: false,
-
                         message:
-                            "Unable to verify selected donor."
-
+                            "Unable to determine requester account."
                     });
-
-                }
-
-
-                if (results.length === 0) {
-
-                    return res.status(404).json({
-
-                        success: false,
-
-                        message:
-                            "Selected donor was not found."
-
-                    });
-
-                }
-
-
-                const donor =
-                    results[0];
-
-
-                /*
-                 * Prevent request to unavailable donor
-                 */
-
-                if (
-                    donor.availability !== 1
-                ) {
-
-                    return res.status(409).json({
-
-                        success: false,
-
-                        message:
-                            `${donor.name} is currently unavailable.`
-
-                    });
-
                 }
 
 
                 /*
-                 * Blood group check
+                 * We only accept the fallback when there is
+                 * exactly one possible requester.
                  */
 
                 if (
-                    donor.blood_group !==
-                    blood_group
+                    fallbackResults.length !== 1
                 ) {
 
                     return res.status(400).json({
-
                         success: false,
-
                         message:
-                            "Selected donor blood group does not match the request."
-
+                            "Requester ID is missing. Please login before submitting the blood request."
                     });
-
                 }
 
 
-                continueRequest();
-
+                continueWithRequester(
+                    fallbackResults[0]
+                );
             }
         );
-
     }
 );
-
 
 /* =====================================================
    ACCEPT BLOOD REQUEST
@@ -1106,37 +1103,31 @@ app.put(
         const requestId =
             req.params.id;
 
-
         const {
             donor_id
         } = req.body;
 
 
-        /* Validate donor ID */
-
         if (!donor_id) {
-
             return res.status(400).json({
-
                 success: false,
-
                 message:
                     "Donor ID is required."
-
             });
-
         }
 
 
         /*
-         * Get request + selected donor
+         * Get:
+         * - request
+         * - donor
+         * - requester
          */
 
         const checkSql = `
-
             SELECT
-
                 br.id,
+                br.requester_id,
                 br.donor_id,
                 br.patient_name,
                 br.blood_group,
@@ -1154,17 +1145,23 @@ app.put(
                 d.email AS donor_email,
                 d.phone AS donor_phone,
                 d.blood_group AS donor_blood_group,
-                d.availability AS donor_availability
+                d.availability AS donor_availability,
+
+                r.name AS requester_name,
+                r.email AS requester_email,
+                r.phone AS requester_phone
 
             FROM blood_requests br
 
             JOIN donors d
                 ON d.id = ?
 
+            LEFT JOIN donors r
+                ON r.id = br.requester_id
+
             WHERE br.id = ?
 
             LIMIT 1
-
         `;
 
 
@@ -1177,35 +1174,27 @@ app.put(
             (err, results) => {
 
                 if (err) {
-
                     console.log(
                         "Accept request check error:",
                         err.message
                     );
 
                     return res.status(500).json({
-
                         success: false,
-
                         message:
                             "Unable to verify blood request."
-
                     });
-
                 }
 
 
-                if (results.length === 0) {
-
+                if (
+                    results.length === 0
+                ) {
                     return res.status(404).json({
-
                         success: false,
-
                         message:
                             "Blood request or donor not found."
-
                     });
-
                 }
 
 
@@ -1214,106 +1203,78 @@ app.put(
 
 
                 /*
-                 * Make sure this request
-                 * actually belongs to this donor
+                 * Only assigned donor can accept.
                  */
 
                 if (
                     Number(request.donor_id) !==
                     Number(donor_id)
                 ) {
-
                     return res.status(403).json({
-
                         success: false,
-
                         message:
                             "This blood request is not assigned to you."
-
                     });
-
                 }
 
-
-                /*
-                 * Already accepted
-                 */
 
                 if (
                     request.status ===
                     "Accepted"
                 ) {
-
                     return res.status(409).json({
-
                         success: false,
-
                         message:
                             "This blood request has already been accepted."
-
                     });
-
                 }
 
-
-                /*
-                 * Check donor availability
-                 */
 
                 if (
-                    request.donor_availability !== 1
+                    request.donor_availability !==
+                    1
                 ) {
-
                     return res.status(409).json({
-
                         success: false,
-
                         message:
                             "You are currently unavailable for donation."
-
                     });
-
                 }
 
-
-                /*
-                 * Blood group matching
-                 */
 
                 if (
                     request.blood_group !==
                     request.donor_blood_group
                 ) {
-
                     return res.status(400).json({
-
                         success: false,
-
                         message:
                             "Your blood group does not match this request."
-
                     });
+                }
 
+
+                if (
+                    !request.requester_id
+                ) {
+                    return res.status(409).json({
+                        success: false,
+                        message:
+                            "This request has no requester assigned. Please create a new request."
+                    });
                 }
 
 
                 /*
-                 * Accept request
+                 * Accept request.
                  */
 
                 const updateSql = `
-
                     UPDATE blood_requests
-
-                    SET
-                        status = 'Accepted'
-
+                    SET status = 'Accepted'
                     WHERE id = ?
-
                     AND donor_id = ?
-
                     AND status = 'Pending'
-
                 `;
 
 
@@ -1326,51 +1287,35 @@ app.put(
                     (updateErr, result) => {
 
                         if (updateErr) {
-
                             console.log(
                                 "Accept request update error:",
                                 updateErr.message
                             );
 
                             return res.status(500).json({
-
                                 success: false,
-
                                 message:
                                     "Unable to accept blood request."
-
                             });
-
                         }
 
-
-                        /*
-                         * Nothing updated means
-                         * another action already happened
-                         */
 
                         if (
                             result.affectedRows === 0
                         ) {
-
                             return res.status(409).json({
-
                                 success: false,
-
                                 message:
                                     "This blood request is no longer pending."
-
                             });
-
                         }
 
 
                         /*
-                         * Success response
+                         * Return details for BOTH users.
                          */
 
                         res.json({
-
                             success: true,
 
                             message:
@@ -1388,17 +1333,25 @@ app.put(
                             donorPhone:
                                 request.donor_phone,
 
+                            requesterId:
+                                request.requester_id,
+
+                            requesterName:
+                                request.requester_name,
+
+                            requesterPhone:
+                                request.requester_phone,
+
+                            patientName:
+                                request.patient_name,
+
                             status:
                                 "Accepted"
-
                         });
-
                     }
                 );
-
             }
         );
-
     }
 );
 
@@ -1414,43 +1367,35 @@ app.get(
         const donorId =
             req.params.donorId;
 
-
         const sql = `
-
             SELECT
-
                 br.id,
-
+                br.requester_id,
                 br.donor_id,
-
                 br.patient_name,
-
                 br.blood_group,
-
                 br.units_required,
-
                 br.hospital_name,
-
                 br.city,
-
                 br.contact_number,
-
                 br.urgency,
-
                 br.required_date,
-
                 br.message,
-
                 br.status,
+                br.created_at,
 
-                br.created_at
+                r.name AS requester_name,
+                r.email AS requester_email,
+                r.phone AS requester_phone
 
             FROM blood_requests br
+
+            LEFT JOIN donors r
+                ON r.id = br.requester_id
 
             WHERE br.donor_id = ?
 
             ORDER BY br.id DESC
-
         `;
 
 
@@ -1460,35 +1405,100 @@ app.get(
             (err, results) => {
 
                 if (err) {
-
                     console.log(
                         "Donor requests error:",
                         err.message
                     );
 
                     return res.status(500).json({
-
                         success: false,
-
                         message:
                             "Unable to load blood requests."
-
                     });
-
                 }
 
 
                 res.json({
-
                     success: true,
-
                     requests: results
-
                 });
-
             }
         );
+    }
+);
 
+
+/* =====================================================
+   GET BLOOD REQUESTS FOR A REQUESTER
+   ===================================================== */
+
+app.get(
+    "/api/blood-requests/requester/:requesterId",
+    (req, res) => {
+
+        const requesterId =
+            req.params.requesterId;
+
+        const sql = `
+            SELECT
+                br.id,
+                br.requester_id,
+                br.donor_id,
+                br.patient_name,
+                br.blood_group,
+                br.units_required,
+                br.hospital_name,
+                br.city,
+                br.contact_number,
+                br.urgency,
+                br.required_date,
+                br.message,
+                br.status,
+                br.created_at,
+
+                d.name AS donor_name,
+                d.email AS donor_email,
+                d.phone AS donor_phone,
+                d.blood_group AS donor_blood_group,
+                d.city AS donor_city,
+                d.area AS donor_area
+
+            FROM blood_requests br
+
+            LEFT JOIN donors d
+                ON d.id = br.donor_id
+
+            WHERE br.requester_id = ?
+
+            ORDER BY br.id DESC
+        `;
+
+
+        db.query(
+            sql,
+            [requesterId],
+            (err, results) => {
+
+                if (err) {
+                    console.log(
+                        "Requester requests error:",
+                        err.message
+                    );
+
+                    return res.status(500).json({
+                        success: false,
+                        message:
+                            "Unable to load your blood requests."
+                    });
+                }
+
+
+                res.json({
+                    success: true,
+                    requests: results
+                });
+            }
+        );
     }
 );
 
@@ -1504,58 +1514,48 @@ app.get(
         const requestId =
             req.params.id;
 
-
         const sql = `
-
             SELECT
-
                 br.id,
-
+                br.requester_id,
                 br.donor_id,
-
                 br.patient_name,
-
                 br.blood_group,
-
                 br.units_required,
-
                 br.hospital_name,
-
                 br.city,
-
                 br.contact_number,
-
                 br.urgency,
-
                 br.required_date,
-
                 br.message,
-
                 br.status,
-
                 br.created_at,
 
                 d.name AS donor_name,
-
                 d.email AS donor_email,
-
                 d.phone AS donor_phone,
-
                 d.blood_group AS donor_blood_group,
-
                 d.city AS donor_city,
+                d.area AS donor_area,
 
-                d.area AS donor_area
+                r.name AS requester_name,
+                r.email AS requester_email,
+                r.phone AS requester_phone,
+                r.blood_group AS requester_blood_group,
+                r.city AS requester_city,
+                r.area AS requester_area
 
             FROM blood_requests br
 
             LEFT JOIN donors d
                 ON br.donor_id = d.id
 
+            LEFT JOIN donors r
+                ON br.requester_id = r.id
+
             WHERE br.id = ?
 
             LIMIT 1
-
         `;
 
 
@@ -1565,49 +1565,36 @@ app.get(
             (err, results) => {
 
                 if (err) {
-
                     console.log(
                         "Single blood request error:",
                         err.message
                     );
 
                     return res.status(500).json({
-
                         success: false,
-
                         message:
                             "Unable to load blood request."
-
                     });
-
                 }
 
 
-                if (results.length === 0) {
-
+                if (
+                    results.length === 0
+                ) {
                     return res.status(404).json({
-
                         success: false,
-
                         message:
                             "Blood request not found."
-
                     });
-
                 }
 
 
                 res.json({
-
                     success: true,
-
                     request: results[0]
-
                 });
-
             }
         );
-
     }
 );
 
@@ -1621,44 +1608,37 @@ app.get(
     (req, res) => {
 
         const sql = `
-
             SELECT
-
                 br.id,
-
+                br.requester_id,
                 br.donor_id,
-
                 br.patient_name,
-
                 br.blood_group,
-
                 br.units_required,
-
                 br.hospital_name,
-
                 br.city,
-
                 br.contact_number,
-
                 br.urgency,
-
                 br.required_date,
-
                 br.message,
-
                 br.status,
-
                 br.created_at,
 
-                d.name AS donor_name
+                d.name AS donor_name,
+                d.phone AS donor_phone,
+
+                r.name AS requester_name,
+                r.phone AS requester_phone
 
             FROM blood_requests br
 
             LEFT JOIN donors d
                 ON br.donor_id = d.id
 
-            ORDER BY br.id DESC
+            LEFT JOIN donors r
+                ON br.requester_id = r.id
 
+            ORDER BY br.id DESC
         `;
 
 
@@ -1667,35 +1647,25 @@ app.get(
             (err, results) => {
 
                 if (err) {
-
                     console.log(
                         "Blood requests fetch error:",
                         err.message
                     );
 
                     return res.status(500).json({
-
                         success: false,
-
                         message:
                             "Unable to load blood requests."
-
                     });
-
                 }
 
 
                 res.json({
-
                     success: true,
-
                     requests: results
-
                 });
-
             }
         );
-
     }
 );
 
@@ -1709,12 +1679,9 @@ app.get(
     (req, res) => {
 
         res.json({
-
             success: true,
-
             message:
                 "BloodConnect API is working!"
-
         });
 
     }
@@ -1728,10 +1695,8 @@ app.get(
 app.listen(
     PORT,
     () => {
-
         console.log(
             `BloodConnect server running at http://localhost:${PORT}`
         );
-
     }
 );

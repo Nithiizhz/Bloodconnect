@@ -1,51 +1,78 @@
-/* =========================================================
-   BLOODCONNECT - SCRIPT.JS
-   Complete Frontend + Backend Connected Version
-   ========================================================= */
-
-
-/* =========================================================
-   GLOBAL STATE
-   ========================================================= */
+/* =====================================================
+   BLOODCONNECT - MAIN SCRIPT.JS
+   Complete Frontend + Blood Request Notification Flow
+   ===================================================== */
 
 let donors = [];
 let selectedDonorId = null;
+
 let incomingRequestsLoadedFor = null;
 
+let requesterStatusTimer = null;
+let requesterStatusRequestId = null;
 
-/* =========================================================
-   HELPER
-   ========================================================= */
 
-function $(id) {
-    return document.getElementById(id);
+/* =====================================================
+   BASIC HELPER
+   ===================================================== */
+
+const $ = id => document.getElementById(id);
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
-/* =========================================================
-   NOTIFICATION
-   ========================================================= */
+/* =====================================================
+   NOTIFICATION SYSTEM
+   ===================================================== */
 
-function showNotification(message, type = "success") {
+function showNotification(
+    message,
+    type = "success"
+) {
 
-    const existing = document.querySelector(".notification");
+    document
+        .querySelectorAll(".notification")
+        .forEach(
+            notification => notification.remove()
+        );
 
-    if (existing) {
-        existing.remove();
-    }
 
-    const notification = document.createElement("div");
+    const notification =
+        document.createElement("div");
 
-    notification.className = `notification ${type}`;
+
+    notification.className =
+        `notification ${type}`;
+
 
     notification.innerHTML = `
+
         <span class="notification-icon">
-            ${type === "success" ? "✓" : "!"}
+
+            ${
+                type === "success"
+                    ? "✓"
+                    : "!"
+            }
+
         </span>
 
+
         <span class="notification-message">
+
             ${escapeHtml(message)}
+
         </span>
+
 
         <button
             class="notification-close"
@@ -56,249 +83,545 @@ function showNotification(message, type = "success") {
         </button>
     `;
 
-    document.body.appendChild(notification);
 
-    notification
-        .querySelector(".notification-close")
-        ?.addEventListener("click", () => {
-            notification.remove();
-        });
-
-    setTimeout(() => {
-
-        if (!document.body.contains(notification)) {
-            return;
-        }
-
-        notification.classList.add("hide");
-
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-
-    }, 4000);
-}
-
-
-/* =========================================================
-   MOBILE MENU
-   ========================================================= */
-
-const menuBtn = $("menuBtn");
-const navLinks = document.querySelector(".nav-links");
-const navActions = document.querySelector(".nav-actions");
-
-if (menuBtn && navLinks && navActions) {
-
-    menuBtn.addEventListener("click", () => {
-
-        const isOpen =
-            navLinks.classList.toggle("mobile-open");
-
-        navActions.classList.toggle(
-            "mobile-open",
-            isOpen
-        );
-
-        menuBtn.innerHTML =
-            isOpen ? "✕" : "☰";
-    });
-}
-
-document
-    .querySelectorAll(".nav-links a")
-    .forEach(link => {
-
-        link.addEventListener("click", () => {
-
-            navLinks?.classList.remove(
-                "mobile-open"
-            );
-
-            navActions?.classList.remove(
-                "mobile-open"
-            );
-
-            if (menuBtn) {
-                menuBtn.innerHTML = "☰";
-            }
-        });
-    });
-
-
-/* =========================================================
-   THEME
-   ========================================================= */
-
-const themeToggle = $("themeToggle");
-const themeIcon = $("themeIcon");
-
-function applyTheme(theme) {
-
-    document.documentElement.setAttribute(
-        "data-theme",
-        theme === "dark" ? "dark" : "light"
+    document.body.appendChild(
+        notification
     );
 
-    if (themeIcon) {
-        themeIcon.textContent =
-            theme === "dark" ? "☀️" : "🌙";
-    }
-}
 
-const savedTheme =
-    localStorage.getItem("bloodconnect-theme") ||
-    "light";
-
-applyTheme(savedTheme);
-
-if (themeToggle) {
-
-    themeToggle.addEventListener("click", () => {
-
-        const currentTheme =
-            document.documentElement.getAttribute(
-                "data-theme"
-            );
-
-        const newTheme =
-            currentTheme === "dark"
-                ? "light"
-                : "dark";
-
-        localStorage.setItem(
-            "bloodconnect-theme",
-            newTheme
+    notification
+        .querySelector(
+            ".notification-close"
+        )
+        ?.addEventListener(
+            "click",
+            () => notification.remove()
         );
 
-        applyTheme(newTheme);
-    });
-}
 
+    setTimeout(
+        () => {
 
-/* =========================================================
-   DONOR SEARCH
-   ========================================================= */
-
-const donorSearchForm =
-    $("donorSearchForm");
-
-if (donorSearchForm) {
-
-    donorSearchForm.addEventListener(
-        "submit",
-        async event => {
-
-            event.preventDefault();
-
-            const bloodGroup =
-                $("bloodGroup")?.value;
-
-            const location =
-                $("location")
-                    ?.value
-                    .trim();
-
-            if (!bloodGroup || !location) {
-
-                showNotification(
-                    "Please select a blood group and enter your location.",
-                    "error"
-                );
-
+            if (
+                !notification.isConnected
+            ) {
                 return;
             }
 
-            try {
 
-                const response =
-                    await fetch(
-                        `/api/donors?bloodGroup=${encodeURIComponent(
-                            bloodGroup
-                        )}&location=${encodeURIComponent(
-                            location
-                        )}`
-                    );
+            notification.classList.add(
+                "hide"
+            );
 
-                const data =
-                    await response.json();
 
-                if (
-                    !response.ok ||
-                    !data.success
-                ) {
-                    throw new Error(
-                        data.message ||
-                        "Unable to search donors."
-                    );
-                }
+            setTimeout(
+                () => {
+                    notification.remove();
+                },
+                300
+            );
 
-                donors =
-                    (data.donors || [])
-                        .map(donor => ({
+        },
+        4000
+    );
+}
 
-                            id: donor.id,
-                            name: donor.name,
-                            bloodGroup:
-                                donor.blood_group,
-                            email: donor.email,
-                            phone: donor.phone,
-                            age: donor.age,
 
-                            gender:
-                                donor.gender ||
-                                "Not provided",
+/* =====================================================
+   LOGIN STORAGE
+   ===================================================== */
 
-                            city: donor.city,
-                            area: donor.area,
+function getLoggedInDonor() {
 
-                            lastDonation:
-                                donor.last_donation_date ||
-                                "Not provided",
+    try {
 
-                            available:
-                                Number(
-                                    donor.availability
-                                ) === 1
+        const raw =
+            localStorage.getItem(
+                "bloodconnect-donor"
+            ) ||
+            sessionStorage.getItem(
+                "bloodconnect-donor"
+            );
 
-                        }));
 
-                displayDonors(
-                    donors,
-                    bloodGroup,
-                    location
-                );
+        return raw
+            ? JSON.parse(raw)
+            : null;
 
-                showNotification(
-                    `Found ${donors.length} donor${
-                        donors.length !== 1
-                            ? "s"
-                            : ""
-                    } for ${bloodGroup} near ${location}.`,
-                    "success"
-                );
+    } catch (error) {
 
-            } catch (error) {
+        console.error(
+            "Saved donor data error:",
+            error
+        );
 
-                console.error(
-                    "Donor search error:",
-                    error
-                );
+        return null;
+    }
+}
 
-                showNotification(
-                    error.message ||
-                    "Unable to connect to the backend.",
-                    "error"
-                );
-            }
+
+function saveDonor(
+    donor,
+    remember
+) {
+
+    const storage =
+        remember
+            ? localStorage
+            : sessionStorage;
+
+
+    const otherStorage =
+        remember
+            ? sessionStorage
+            : localStorage;
+
+
+    storage.setItem(
+        "bloodconnect-donor",
+        JSON.stringify(donor)
+    );
+
+
+    storage.setItem(
+        "bloodconnect-user",
+        JSON.stringify({
+            id: donor.id,
+            name: donor.name,
+            email: donor.email,
+            bloodGroup:
+                donor.blood_group ||
+                donor.bloodGroup
+        })
+    );
+
+
+    otherStorage.removeItem(
+        "bloodconnect-donor"
+    );
+
+
+    otherStorage.removeItem(
+        "bloodconnect-user"
+    );
+}
+
+
+/* =====================================================
+   DATE HELPERS
+   ===================================================== */
+
+function formatRequestDate(
+    value
+) {
+
+    if (!value) {
+        return "Not specified";
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return String(value);
+    }
+
+
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
         }
     );
 }
 
 
-/* =========================================================
+function formatRequestDateTime(
+    value
+) {
+
+    if (!value) {
+        return "";
+    }
+
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return String(value);
+    }
+
+
+    return date.toLocaleString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+}
+
+
+function getUrgencyClass(
+    value
+) {
+
+    const urgency =
+        String(value || "")
+            .toLowerCase();
+
+
+    if (
+        urgency.includes("critical") ||
+        urgency.includes("emergency")
+    ) {
+        return "critical";
+    }
+
+
+    if (
+        urgency.includes("urgent")
+    ) {
+        return "urgent";
+    }
+
+
+    return "normal";
+}
+
+
+/* =====================================================
+   THEME
+   ===================================================== */
+
+function applyTheme(
+    theme
+) {
+
+    document.documentElement
+        .setAttribute(
+            "data-theme",
+            theme
+        );
+
+
+    const icon =
+        $("themeIcon");
+
+
+    if (icon) {
+
+        icon.textContent =
+            theme === "dark"
+                ? "☀️"
+                : "🌙";
+    }
+}
+
+
+function setupTheme() {
+
+    const savedTheme =
+        localStorage.getItem(
+            "bloodconnect-theme"
+        ) ||
+        "light";
+
+
+    applyTheme(
+        savedTheme
+    );
+
+
+    const themeToggle =
+        $("themeToggle");
+
+
+    if (!themeToggle) {
+        return;
+    }
+
+
+    themeToggle.addEventListener(
+        "click",
+        () => {
+
+            const current =
+                document.documentElement
+                    .getAttribute(
+                        "data-theme"
+                    );
+
+
+            const next =
+                current === "dark"
+                    ? "light"
+                    : "dark";
+
+
+            localStorage.setItem(
+                "bloodconnect-theme",
+                next
+            );
+
+
+            applyTheme(
+                next
+            );
+        }
+    );
+}
+
+
+/* =====================================================
+   MOBILE MENU
+   ===================================================== */
+
+function setupMobileMenu() {
+
+    const menuBtn =
+        $("menuBtn");
+
+
+    const navLinks =
+        document.querySelector(
+            ".nav-links"
+        );
+
+
+    const navActions =
+        document.querySelector(
+            ".nav-actions"
+        );
+
+
+    if (
+        !menuBtn ||
+        !navLinks ||
+        !navActions
+    ) {
+        return;
+    }
+
+
+    menuBtn.addEventListener(
+        "click",
+        () => {
+
+            const isOpen =
+                navLinks.classList.toggle(
+                    "mobile-open"
+                );
+
+
+            navActions.classList.toggle(
+                "mobile-open",
+                isOpen
+            );
+
+
+            menuBtn.innerHTML =
+                isOpen
+                    ? "✕"
+                    : "☰";
+        }
+    );
+
+
+    document
+        .querySelectorAll(
+            ".nav-links a"
+        )
+        .forEach(
+            link => {
+
+                link.addEventListener(
+                    "click",
+                    () => {
+
+                        navLinks.classList.remove(
+                            "mobile-open"
+                        );
+
+
+                        navActions.classList.remove(
+                            "mobile-open"
+                        );
+
+
+                        menuBtn.innerHTML =
+                            "☰";
+                    }
+                );
+            }
+        );
+}
+
+
+/* =====================================================
+   DONOR SEARCH
+   ===================================================== */
+
+async function searchDonors(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const bloodGroup =
+        $("bloodGroup")
+            ?.value;
+
+
+    const location =
+        $("location")
+            ?.value
+            .trim();
+
+
+    if (
+        !bloodGroup ||
+        !location
+    ) {
+
+        showNotification(
+            "Please select a blood group and enter your location.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        showNotification(
+            "Searching for donors...",
+            "success"
+        );
+
+
+        const response =
+            await fetch(
+                `/api/donors?bloodGroup=${encodeURIComponent(
+                    bloodGroup
+                )}&location=${encodeURIComponent(
+                    location
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Unable to search donors."
+            );
+        }
+
+
+        donors =
+            (data.donors || [])
+                .map(
+                    donor => ({
+
+                        id:
+                            donor.id,
+
+                        name:
+                            donor.name,
+
+                        bloodGroup:
+                            donor.blood_group,
+
+                        email:
+                            donor.email,
+
+                        phone:
+                            donor.phone,
+
+                        age:
+                            donor.age,
+
+                        gender:
+                            donor.gender ||
+                            "Not provided",
+
+                        city:
+                            donor.city,
+
+                        area:
+                            donor.area,
+
+                        lastDonation:
+                            donor.last_donation_date ||
+                            "Not provided",
+
+                        available:
+                            Number(
+                                donor.availability
+                            ) === 1
+                    })
+                );
+
+
+        displayDonors(
+            donors,
+            bloodGroup,
+            location
+        );
+
+
+        showNotification(
+            `Found ${donors.length} donor${donors.length === 1 ? "" : "s"} for ${bloodGroup} near ${location}.`,
+            "success"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Donor search error:",
+            error
+        );
+
+
+        showNotification(
+            error.message ||
+            "Unable to connect to the backend.",
+            "error"
+        );
+    }
+}
+
+
+/* =====================================================
    DISPLAY DONORS
-   ========================================================= */
+   ===================================================== */
 
 function displayDonors(
     matchingDonors,
@@ -309,219 +632,333 @@ function displayDonors(
     const resultsSection =
         $("donor-results");
 
+
     const donorResults =
         $("donorResults");
+
 
     const resultsCount =
         $("resultsCount");
 
+
     const resultsSubtitle =
         $("resultsSubtitle");
 
+
     const noResults =
         $("noResults");
+
 
     if (!resultsSection) {
         return;
     }
 
-    resultsSection.classList.add("show");
+
+    resultsSection.classList.add(
+        "show"
+    );
+
 
     if (resultsSubtitle) {
+
         resultsSubtitle.textContent =
             `${bloodGroup} donors available near ${location}`;
     }
 
+
     if (resultsCount) {
+
         resultsCount.textContent =
-            `${matchingDonors.length} donor${
-                matchingDonors.length !== 1
-                    ? "s"
-                    : ""
-            }`;
+            `${matchingDonors.length} donor${matchingDonors.length === 1 ? "" : "s"}`;
     }
 
-    if (donorResults) {
-        donorResults.innerHTML = "";
+
+    if (!donorResults) {
+        return;
     }
 
-    if (matchingDonors.length === 0) {
 
-        noResults?.classList.add("show");
+    donorResults.innerHTML = "";
 
-        if (donorResults) {
-            donorResults.style.display = "none";
-        }
 
-        resultsSection.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
+    if (
+        matchingDonors.length === 0
+    ) {
+
+        noResults?.classList.add(
+            "show"
+        );
+
+
+        donorResults.style.display =
+            "none";
+
 
         return;
     }
 
-    noResults?.classList.remove("show");
 
-    if (donorResults) {
-        donorResults.style.display = "grid";
-    }
+    noResults?.classList.remove(
+        "show"
+    );
 
-    matchingDonors.forEach(donor => {
 
-        const card =
-            document.createElement("article");
+    donorResults.style.display =
+        "grid";
 
-        card.className = "donor-card";
 
-        const firstLetter =
-            (donor.name || "D")
-                .charAt(0)
-                .toUpperCase();
+    matchingDonors.forEach(
+        donor => {
 
-        const availabilityClass =
-            donor.available
-                ? "available"
-                : "unavailable";
+            const card =
+                document.createElement(
+                    "article"
+                );
 
-        const availabilityText =
-            donor.available
-                ? "Available"
-                : "Currently unavailable";
 
-        card.innerHTML = `
+            card.className =
+                "donor-card";
 
-            <div class="donor-top">
 
-                <div class="donor-info">
+            const firstLetter =
+                (
+                    donor.name ||
+                    "D"
+                )
+                    .charAt(0)
+                    .toUpperCase();
 
-                    <div class="donor-avatar">
-                        ${escapeHtml(firstLetter)}
-                    </div>
 
-                    <div>
+            card.innerHTML = `
 
-                        <div class="donor-name">
-                            ${escapeHtml(donor.name)}
+                <div class="donor-top">
+
+                    <div class="donor-info">
+
+                        <div class="donor-avatar">
+
+                            ${escapeHtml(
+                                firstLetter
+                            )}
+
                         </div>
 
-                        <div class="donor-location">
+
+                        <div>
+
+                            <div class="donor-name">
+
+                                ${escapeHtml(
+                                    donor.name
+                                )}
+
+                            </div>
+
+
+                            <div class="donor-location">
+
+                                📍
+
+                                ${escapeHtml(
+                                    donor.area ||
+                                    "Area"
+                                )},
+
+                                ${escapeHtml(
+                                    donor.city ||
+                                    "City"
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="availability ${
+                            donor.available
+                                ? "available"
+                                : "unavailable"
+                        }"
+                    >
+
+                        <span
+                            class="availability-dot"
+                        ></span>
+
+
+                        ${
+                            donor.available
+                                ? "Available"
+                                : "Currently unavailable"
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <div class="donor-details">
+
+                    <div class="donor-detail">
+
+                        <span class="detail-icon">
+                            🩸
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                ${escapeHtml(
+                                    donor.bloodGroup ||
+                                    "—"
+                                )}
+                            </strong>
+
+                            <span>
+                                Blood Group
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="donor-detail">
+
+                        <span class="detail-icon">
+                            👤
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                ${escapeHtml(
+                                    donor.age ||
+                                    "—"
+                                )} years
+                            </strong>
+
+                            <span>
+                                Age
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="donor-detail">
+
+                        <span class="detail-icon">
+                            📅
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                ${escapeHtml(
+                                    donor.lastDonation
+                                )}
+                            </strong>
+
+                            <span>
+                                Last Donation
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="donor-detail">
+
+                        <span class="detail-icon">
                             📍
-                            ${escapeHtml(
-                                donor.area || "Area"
-                            )},
-                            ${escapeHtml(
-                                donor.city || "City"
-                            )}
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                ${escapeHtml(
+                                    donor.city ||
+                                    "—"
+                                )}
+                            </strong>
+
+                            <span>
+                                Location
+                            </span>
+
                         </div>
 
                     </div>
 
                 </div>
 
-                <div class="availability ${availabilityClass}">
-                    <span class="availability-dot"></span>
-                    ${availabilityText}
+
+                <div class="donor-actions">
+
+                    <button
+                        type="button"
+                        class="view-profile-btn"
+                        onclick="viewDonorProfile(${Number(
+                            donor.id
+                        )})"
+                    >
+                        View Profile
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="request-btn"
+                        onclick="requestBlood(${Number(
+                            donor.id
+                        )})"
+                        ${
+                            donor.available
+                                ? ""
+                                : "disabled"
+                        }
+                    >
+                        Request Blood
+                    </button>
+
                 </div>
-
-            </div>
-
-
-            <div class="donor-details">
-
-                <div class="donor-detail">
-                    <span class="detail-icon">🩸</span>
-                    <div>
-                        <strong>
-                            ${escapeHtml(
-                                donor.bloodGroup || "—"
-                            )}
-                        </strong>
-                        <span>Blood Group</span>
-                    </div>
-                </div>
-
-                <div class="donor-detail">
-                    <span class="detail-icon">👤</span>
-                    <div>
-                        <strong>
-                            ${escapeHtml(
-                                donor.age || "—"
-                            )} years
-                        </strong>
-                        <span>Age</span>
-                    </div>
-                </div>
-
-                <div class="donor-detail">
-                    <span class="detail-icon">📅</span>
-                    <div>
-                        <strong>
-                            ${escapeHtml(
-                                donor.lastDonation
-                            )}
-                        </strong>
-                        <span>Last Donation</span>
-                    </div>
-                </div>
-
-                <div class="donor-detail">
-                    <span class="detail-icon">📍</span>
-                    <div>
-                        <strong>
-                            ${escapeHtml(
-                                donor.city || "—"
-                            )}
-                        </strong>
-                        <span>Location</span>
-                    </div>
-                </div>
-
-            </div>
+            `;
 
 
-            <div class="donor-actions">
+            donorResults.appendChild(
+                card
+            );
+        }
+    );
 
-                <button
-                    type="button"
-                    class="view-profile-btn"
-                    onclick="viewDonorProfile(${Number(donor.id)})"
-                >
-                    View Profile
-                </button>
 
-                <button
-                    type="button"
-                    class="request-btn"
-                    onclick="requestBlood(${Number(donor.id)})"
-                    ${!donor.available ? "disabled" : ""}
-                >
-                    Request Blood
-                </button>
+    setTimeout(
+        () => {
 
-            </div>
+            resultsSection.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
 
-        `;
-
-        donorResults?.appendChild(card);
-    });
-
-    setTimeout(() => {
-
-        resultsSection.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-
-    }, 200);
+        },
+        100
+    );
 }
 
 
-/* =========================================================
+/* =====================================================
    DONOR PROFILE
-   ========================================================= */
+   ===================================================== */
 
-function viewDonorProfile(donorId) {
+function viewDonorProfile(
+    donorId
+) {
 
     const donor =
         donors.find(
@@ -530,16 +967,24 @@ function viewDonorProfile(donorId) {
                 Number(donorId)
         );
 
+
     if (!donor) {
         return;
     }
 
+
     $("donorProfileModal")?.remove();
 
-    const modal =
-        document.createElement("div");
 
-    modal.id = "donorProfileModal";
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.id =
+        "donorProfileModal";
+
 
     modal.innerHTML = `
 
@@ -555,118 +1000,199 @@ function viewDonorProfile(donorId) {
                     ×
                 </button>
 
+
                 <div class="profile-avatar">
+
                     ${escapeHtml(
-                        donor.name
+                        (
+                            donor.name ||
+                            "D"
+                        )
                             .charAt(0)
                             .toUpperCase()
                     )}
+
                 </div>
 
+
                 <h2>
-                    ${escapeHtml(donor.name)}
+                    ${escapeHtml(
+                        donor.name
+                    )}
                 </h2>
 
+
                 <p class="profile-location">
+
                     📍
+
                     ${escapeHtml(
-                        donor.area || "Area"
+                        donor.area ||
+                        "Area"
                     )},
+
                     ${escapeHtml(
-                        donor.city || "City"
+                        donor.city ||
+                        "City"
                     )}
+
                 </p>
 
-                <div class="profile-status ${
-                    donor.available
-                        ? "available"
-                        : "unavailable"
-                }">
+
+                <div
+                    class="profile-status ${
+                        donor.available
+                            ? "available"
+                            : "unavailable"
+                    }"
+                >
+
                     ●
+
                     ${
                         donor.available
                             ? "Available for donation"
                             : "Currently unavailable"
                     }
+
                 </div>
+
 
                 <div class="profile-details">
 
                     <div class="profile-detail">
+
                         <span>🩸</span>
+
                         <div>
+
                             <strong>
                                 ${escapeHtml(
-                                    donor.bloodGroup || "—"
+                                    donor.bloodGroup ||
+                                    "—"
                                 )}
                             </strong>
-                            <small>Blood Group</small>
+
+                            <small>
+                                Blood Group
+                            </small>
+
                         </div>
+
                     </div>
 
+
                     <div class="profile-detail">
+
                         <span>👤</span>
+
                         <div>
+
                             <strong>
                                 ${escapeHtml(
-                                    donor.age || "—"
+                                    donor.age ||
+                                    "—"
                                 )} years
                             </strong>
-                            <small>Age</small>
+
+                            <small>
+                                Age
+                            </small>
+
                         </div>
+
                     </div>
 
+
                     <div class="profile-detail">
+
                         <span>⚧</span>
+
                         <div>
+
                             <strong>
                                 ${escapeHtml(
                                     donor.gender ||
                                     "Not provided"
                                 )}
                             </strong>
-                            <small>Gender</small>
+
+                            <small>
+                                Gender
+                            </small>
+
                         </div>
+
                     </div>
 
+
                     <div class="profile-detail">
+
                         <span>📍</span>
+
                         <div>
+
                             <strong>
                                 ${escapeHtml(
-                                    donor.city || "—"
+                                    donor.city ||
+                                    "—"
                                 )}
                             </strong>
-                            <small>City</small>
+
+                            <small>
+                                City
+                            </small>
+
                         </div>
+
                     </div>
 
+
                     <div class="profile-detail">
+
                         <span>🏠</span>
+
                         <div>
+
                             <strong>
                                 ${escapeHtml(
-                                    donor.area || "—"
+                                    donor.area ||
+                                    "—"
                                 )}
                             </strong>
-                            <small>Area</small>
+
+                            <small>
+                                Area
+                            </small>
+
                         </div>
+
                     </div>
 
+
                     <div class="profile-detail">
+
                         <span>📅</span>
+
                         <div>
+
                             <strong>
                                 ${escapeHtml(
                                     donor.lastDonation ||
                                     "Not provided"
                                 )}
                             </strong>
-                            <small>Last Donation</small>
+
+                            <small>
+                                Last Donation
+                            </small>
+
                         </div>
+
                     </div>
 
                 </div>
+
 
                 <div class="profile-actions">
 
@@ -674,9 +1200,9 @@ function viewDonorProfile(donorId) {
                         type="button"
                         class="profile-request-btn"
                         ${
-                            !donor.available
-                                ? "disabled"
-                                : ""
+                            donor.available
+                                ? ""
+                                : "disabled"
                         }
                     >
                         Request Blood
@@ -689,50 +1215,67 @@ function viewDonorProfile(donorId) {
         </div>
     `;
 
-    document.body.appendChild(modal);
+
+    document.body.appendChild(
+        modal
+    );
+
 
     modal
-        .querySelector(".profile-modal-close")
+        .querySelector(
+            ".profile-modal-close"
+        )
         ?.addEventListener(
             "click",
             () => modal.remove()
         );
 
+
     modal
-        .querySelector(".profile-request-btn")
+        .querySelector(
+            ".profile-request-btn"
+        )
         ?.addEventListener(
             "click",
             () => {
 
                 modal.remove();
 
-                requestBlood(donor.id);
+                requestBlood(
+                    donor.id
+                );
             }
         );
 
-    const overlay =
-        modal.querySelector(
+
+    modal
+        .querySelector(
             ".profile-modal-overlay"
-        );
+        )
+        ?.addEventListener(
+            "click",
+            event => {
 
-    overlay?.addEventListener(
-        "click",
-        event => {
+                if (
+                    event.target.classList.contains(
+                        "profile-modal-overlay"
+                    )
+                ) {
 
-            if (event.target === overlay) {
-                modal.remove();
+                    modal.remove();
+                }
             }
-
-        }
-    );
+        );
 }
 
 
-/* =========================================================
-   SELECT DONOR
-   ========================================================= */
+/* =====================================================
+   REQUEST BLOOD
+   ===================================================== */
 
-function requestBlood(donorId) {
+function requestBlood(
+    donorId
+) {
 
     const donor =
         donors.find(
@@ -741,9 +1284,11 @@ function requestBlood(donorId) {
                 Number(donorId)
         );
 
+
     if (!donor) {
         return;
     }
+
 
     if (!donor.available) {
 
@@ -755,24 +1300,29 @@ function requestBlood(donorId) {
         return;
     }
 
+
     selectedDonorId =
         Number(donor.id);
+
 
     const requestBloodGroup =
         $("requestBloodGroup");
 
+
     if (requestBloodGroup) {
+
         requestBloodGroup.value =
-            donor.bloodGroup || "";
+            donor.bloodGroup ||
+            "";
     }
 
-    const requestSection =
-        $("request");
 
-    requestSection?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
+    $("request")
+        ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
 
     showNotification(
         `Requesting blood from ${donor.name}.`,
@@ -781,613 +1331,1015 @@ function requestBlood(donorId) {
 }
 
 
-/* =========================================================
+/* =====================================================
    BLOOD REQUEST FORM
-   ========================================================= */
-
-const bloodRequestForm =
-    $("bloodRequestForm");
+   ===================================================== */
 
-if (bloodRequestForm) {
-
-    bloodRequestForm.addEventListener(
-        "submit",
-        async event => {
-
-            event.preventDefault();
+async function submitBloodRequest(
+    event
+) {
 
-            const patientName =
-                $("patientName")
-                    ?.value
-                    .trim();
+    event.preventDefault();
 
-            const bloodGroup =
-                $("requestBloodGroup")
-                    ?.value;
 
-            const units =
-                Number(
-                    $("unitsRequired")?.value
-                );
+    /* =================================================
+       GET FORM VALUES
+       ================================================= */
 
-            const hospital =
-                $("hospitalName")
-                    ?.value
-                    .trim();
+    const patientName =
+        $("patientName")
+            ?.value
+            .trim();
 
-            const city =
-                $("requestCity")
-                    ?.value
-                    .trim();
 
-            const phone =
-                $("contactNumber")
-                    ?.value
-                    .trim();
+    const bloodGroup =
+        $("requestBloodGroup")
+            ?.value;
 
-            const urgency =
-                $("urgency")?.value;
 
-            const requiredDate =
-                $("requiredDate")?.value;
+    const units =
+        Number(
+            $("unitsRequired")
+                ?.value
+        );
 
-            const message =
-                $("requestMessage")
-                    ?.value
-                    .trim();
 
-            if (
-                !patientName ||
-                !bloodGroup ||
-                !units ||
-                !hospital ||
-                !city ||
-                !phone ||
-                !urgency ||
-                !requiredDate
-            ) {
+    const hospital =
+        $("hospitalName")
+            ?.value
+            .trim();
 
-                showNotification(
-                    "Please fill in all required blood request fields.",
-                    "error"
-                );
 
-                return;
-            }
+    const city =
+        $("requestCity")
+            ?.value
+            .trim();
 
-            if (units < 1) {
 
-                showNotification(
-                    "Units required must be at least 1.",
-                    "error"
-                );
+    const phone =
+        $("contactNumber")
+            ?.value
+            .trim();
 
-                return;
-            }
 
-            if (!/^[0-9]{10}$/.test(phone)) {
+    const urgency =
+        $("urgency")
+            ?.value;
 
-                showNotification(
-                    "Please enter a valid 10-digit contact number.",
-                    "error"
-                );
 
-                return;
-            }
+    const requiredDate =
+        $("requiredDate")
+            ?.value;
 
-            try {
 
-                const donorIdForRequest =
-                    selectedDonorId;
+    const message =
+        $("requestMessage")
+            ?.value
+            .trim();
 
-                const response =
-                    await fetch(
-                        "/api/blood-requests",
-                        {
-                            method: "POST",
 
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
+    /* =================================================
+       GET LOGGED-IN REQUESTER
+       ================================================= */
 
-                            body:
-                                JSON.stringify({
+    const loggedInDonor =
+        getLoggedInDonor();
 
-                                    donor_id:
-                                        donorIdForRequest,
 
-                                    patient_name:
-                                        patientName,
+    if (
+        !loggedInDonor ||
+        !loggedInDonor.id
+    ) {
 
-                                    blood_group:
-                                        bloodGroup,
+        showNotification(
+            "Please login before submitting a blood request.",
+            "error"
+        );
 
-                                    units_required:
-                                        units,
+        return;
+    }
 
-                                    hospital_name:
-                                        hospital,
 
-                                    city:
-                                        city,
+    /*
+     * THIS IS THE IMPORTANT PART
+     *
+     * The person who is currently logged in
+     * is the requester.
+     */
 
-                                    contact_number:
-                                        phone,
+    const requesterId =
+        Number(
+            loggedInDonor.id
+        );
 
-                                    urgency:
-                                        urgency,
 
-                                    required_date:
-                                        requiredDate,
+    /* =================================================
+       VALIDATION
+       ================================================= */
 
-                                    message:
-                                        message
+    if (
+        !patientName ||
+        !bloodGroup ||
+        !units ||
+        !hospital ||
+        !city ||
+        !phone ||
+        !urgency ||
+        !requiredDate
+    ) {
 
-                                })
-                        }
-                    );
+        showNotification(
+            "Please fill in all required blood request fields.",
+            "error"
+        );
 
-                const data =
-                    await response.json();
+        return;
+    }
 
-                if (
-                    !response.ok ||
-                    !data.success
-                ) {
 
-                    throw new Error(
-                        data.message ||
-                        "Blood request submission failed."
-                    );
-                }
+    if (
+        units < 1
+    ) {
 
+        showNotification(
+            "Units required must be at least 1.",
+            "error"
+        );
 
-                /* Save request ID for requester tracking */
+        return;
+    }
 
-                if (data.requestId) {
 
-                    localStorage.setItem(
-                        "bloodconnect-last-request",
-                        String(data.requestId)
-                    );
+    if (
+        !/^[0-9]{10}$/.test(
+            phone
+        )
+    ) {
 
-                    sessionStorage.setItem(
-                        "bloodconnect-last-request",
-                        String(data.requestId)
-                    );
-                }
+        showNotification(
+            "Please enter a valid 10-digit contact number.",
+            "error"
+        );
 
+        return;
+    }
 
-                showNotification(
-                    donorIdForRequest
-                        ? "Blood request sent to the selected donor successfully!"
-                        : "Blood request submitted successfully!",
-                    "success"
-                );
 
+    /* =================================================
+       MAKE SURE A DONOR WAS SELECTED
+       ================================================= */
 
-                bloodRequestForm.reset();
+    if (
+        !selectedDonorId
+    ) {
 
-                selectedDonorId = null;
+        showNotification(
+            "Please select a donor before submitting the request.",
+            "error"
+        );
 
+        return;
+    }
 
-                /*
-                 * Show requester tracking section
-                 */
 
-                if (data.requestId) {
-
-                    ensureRequesterStatusUI();
-
-                    loadRequesterRequestStatus(
-                        data.requestId
-                    );
-                }
-
-
-            } catch (error) {
-
-                console.error(
-                    "Blood request error:",
-                    error
-                );
-
-                showNotification(
-                    error.message ||
-                    "Unable to submit blood request.",
-                    "error"
-                );
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   DONOR REGISTRATION
-   ========================================================= */
-
-const donorRegistrationForm =
-    $("donorRegistrationForm");
-
-if (donorRegistrationForm) {
-
-    donorRegistrationForm.addEventListener(
-        "submit",
-        async event => {
-
-            event.preventDefault();
-
-            const name =
-                $("donorName")
-                    ?.value
-                    .trim();
-
-            const email =
-                $("donorEmail")
-                    ?.value
-                    .trim();
-
-            const password =
-                $("donorPassword")
-                    ?.value;
-
-            const phone =
-                $("donorPhone")
-                    ?.value
-                    .trim();
-
-            const age =
-                Number(
-                    $("donorAge")?.value
-                );
-
-            const bloodGroup =
-                $("donorBloodGroup")
-                    ?.value;
-
-            const gender =
-                $("donorGender")?.value;
-
-            const city =
-                $("donorCity")
-                    ?.value
-                    .trim();
-
-            const area =
-                $("donorArea")
-                    ?.value
-                    .trim();
-
-            const lastDonation =
-                $("lastDonationDate")
-                    ?.value;
-
-            const availability =
-                $("donorAvailability")
-                    ?.value;
-
-            const termsAccepted =
-                $("donorTerms")
-                    ?.checked;
-
-            if (
-                !name ||
-                !email ||
-                !password ||
-                !phone ||
-                !age ||
-                !bloodGroup ||
-                !gender ||
-                !city ||
-                !area ||
-                !availability
-            ) {
-
-                showNotification(
-                    "Please fill all required registration fields.",
-                    "error"
-                );
-
-                return;
-            }
-
-            if (!/^[0-9]{10}$/.test(phone)) {
-
-                showNotification(
-                    "Please enter a valid 10-digit phone number.",
-                    "error"
-                );
-
-                return;
-            }
-
-            if (age < 18 || age > 65) {
-
-                showNotification(
-                    "Donor age must be between 18 and 65.",
-                    "error"
-                );
-
-                return;
-            }
-
-            if (password.length < 6) {
-
-                showNotification(
-                    "Password must contain at least 6 characters.",
-                    "error"
-                );
-
-                return;
-            }
-
-            if (!termsAccepted) {
-
-                showNotification(
-                    "Please accept the terms to continue.",
-                    "error"
-                );
-
-                return;
-            }
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/api/donors",
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-
-                                    name,
-                                    email,
-                                    password,
-                                    phone,
-                                    age,
-
-                                    blood_group:
-                                        bloodGroup,
-
-                                    gender,
-                                    city,
-                                    area,
-
-                                    last_donation_date:
-                                        lastDonation ||
-                                        null,
-
-                                    availability
-
-                                })
-                        }
-                    );
-
-                const data =
-                    await response.json();
-
-                if (
-                    !response.ok ||
-                    !data.success
-                ) {
-
-                    throw new Error(
-                        data.message ||
-                        "Donor registration failed."
-                    );
-                }
-
-                showNotification(
-                    `Welcome to BloodConnect, ${name}! Registration successful.`,
-                    "success"
-                );
-
-                donorRegistrationForm.reset();
-
-            } catch (error) {
-
-                console.error(
-                    "Registration error:",
-                    error
-                );
-
-                showNotification(
-                    error.message ||
-                    "Unable to register right now.",
-                    "error"
-                );
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
-
-const loginForm = $("loginForm");
-const loginSection = $("login");
-const dashboard = $("dashboard");
-const logoutBtn = $("logoutBtn");
-
-
-/* Password show / hide */
-
-const passwordToggle =
-    $("passwordToggle");
-
-const loginPassword =
-    $("loginPassword");
-
-if (passwordToggle && loginPassword) {
-
-    passwordToggle.addEventListener(
-        "click",
-        () => {
-
-            if (
-                loginPassword.type ===
-                "password"
-            ) {
-
-                loginPassword.type =
-                    "text";
-
-                passwordToggle.textContent =
-                    "Hide";
-
-            } else {
-
-                loginPassword.type =
-                    "password";
-
-                passwordToggle.textContent =
-                    "Show";
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   GET LOGGED IN DONOR
-   ========================================================= */
-
-function getLoggedInDonor() {
+    /* =================================================
+       SEND REQUEST TO BACKEND
+       ================================================= */
 
     try {
 
-        const localDonor =
-            localStorage.getItem(
-                "bloodconnect-donor"
+        const response =
+            await fetch(
+                "/api/blood-requests",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            /*
+                             * REQUESTER
+                             *
+                             * This is the logged-in user.
+                             *
+                             * Example:
+                             * Nithish = 1
+                             * Digeesh = 2
+                             */
+
+                            requester_id:
+                                requesterId,
+
+
+                            /*
+                             * SELECTED DONOR
+                             */
+
+                            donor_id:
+                                Number(
+                                    selectedDonorId
+                                ),
+
+
+                            /*
+                             * PATIENT
+                             */
+
+                            patient_name:
+                                patientName,
+
+
+                            blood_group:
+                                bloodGroup,
+
+
+                            units_required:
+                                units,
+
+
+                            hospital_name:
+                                hospital,
+
+
+                            city:
+                                city,
+
+
+                            contact_number:
+                                phone,
+
+
+                            urgency:
+                                urgency,
+
+
+                            required_date:
+                                requiredDate,
+
+
+                            message:
+                                message
+                        })
+                }
             );
 
-        const sessionDonor =
-            sessionStorage.getItem(
-                "bloodconnect-donor"
+
+        const data =
+            await response.json();
+
+
+        /* =================================================
+           HANDLE BACKEND ERROR
+           ================================================= */
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Blood request submission failed."
+            );
+        }
+
+
+        /* =================================================
+           SAVE REQUEST ID
+           ================================================= */
+
+        if (
+            data.requestId
+        ) {
+
+            const requestId =
+                String(
+                    data.requestId
+                );
+
+
+            /*
+             * Save for requester status.
+             */
+
+            localStorage.setItem(
+                "bloodconnect-last-request",
+                requestId
             );
 
-        const savedDonor =
-            localDonor ||
-            sessionDonor;
 
-        return savedDonor
-            ? JSON.parse(savedDonor)
-            : null;
+            sessionStorage.setItem(
+                "bloodconnect-last-request",
+                requestId
+            );
+
+
+            /*
+             * Notify other tabs.
+             */
+
+            localStorage.setItem(
+                "bloodconnect-request-updated",
+                `${requestId}-${Date.now()}`
+            );
+
+
+            /*
+             * Show requester status UI.
+             */
+
+            ensureRequesterStatusUI();
+
+
+            startRequesterStatusPolling(
+                Number(
+                    data.requestId
+                )
+            );
+        }
+
+
+        /* =================================================
+           RESET FORM
+           ================================================= */
+
+        $("bloodRequestForm")
+            ?.reset();
+
+
+        selectedDonorId =
+            null;
+
+
+        /* =================================================
+           SUCCESS MESSAGE
+           ================================================= */
+
+        showNotification(
+
+            "Blood request sent to the selected donor successfully!",
+
+            "success"
+        );
+
+
+        console.log(
+            "Blood request created:",
+            {
+                requestId:
+                    data.requestId,
+
+                requesterId:
+                    requesterId,
+
+                donorId:
+                    selectedDonorId,
+
+                patientName:
+                    patientName
+            }
+        );
+
 
     } catch (error) {
 
         console.error(
-            "Saved donor data error:",
+            "Blood request error:",
             error
         );
 
-        return null;
+
+        showNotification(
+            error.message ||
+            "Unable to submit blood request.",
+            "error"
+        );
+    }
+}
+
+/* =====================================================
+   DONOR REGISTRATION
+   ===================================================== */
+
+async function submitRegistration(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const name =
+        $("donorName")
+            ?.value
+            .trim();
+
+
+    const email =
+        $("donorEmail")
+            ?.value
+            .trim();
+
+
+    const password =
+        $("donorPassword")
+            ?.value;
+
+
+    const phone =
+        $("donorPhone")
+            ?.value
+            .trim();
+
+
+    const age =
+        Number(
+            $("donorAge")
+                ?.value
+        );
+
+
+    const bloodGroup =
+        $("donorBloodGroup")
+            ?.value;
+
+
+    const gender =
+        $("donorGender")
+            ?.value;
+
+
+    const city =
+        $("donorCity")
+            ?.value
+            .trim();
+
+
+    const area =
+        $("donorArea")
+            ?.value
+            .trim();
+
+
+    const lastDonation =
+        $("lastDonationDate")
+            ?.value;
+
+
+    const availability =
+        $("donorAvailability")
+            ?.value;
+
+
+    const terms =
+        $("donorTerms")
+            ?.checked;
+
+
+    if (
+        !name ||
+        !email ||
+        !password ||
+        !phone ||
+        !age ||
+        !bloodGroup ||
+        !gender ||
+        !city ||
+        !area ||
+        !availability
+    ) {
+
+        showNotification(
+            "Please fill all required registration fields.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        !/^[0-9]{10}$/.test(
+            phone
+        )
+    ) {
+
+        showNotification(
+            "Please enter a valid 10-digit phone number.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        age < 18 ||
+        age > 65
+    ) {
+
+        showNotification(
+            "Donor age must be between 18 and 65.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        password.length < 6
+    ) {
+
+        showNotification(
+            "Password must contain at least 6 characters.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (!terms) {
+
+        showNotification(
+            "Please accept the terms to continue.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/donors",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            name,
+                            email,
+                            password,
+                            phone,
+                            age,
+
+                            blood_group:
+                                bloodGroup,
+
+                            gender,
+                            city,
+                            area,
+
+                            last_donation_date:
+                                lastDonation ||
+                                null,
+
+                            availability
+                        })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Donor registration failed."
+            );
+        }
+
+
+        $("donorRegistrationForm")
+            ?.reset();
+
+
+        showNotification(
+            `Welcome to BloodConnect, ${name}! Registration successful.`,
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Registration error:",
+            error
+        );
+
+
+        showNotification(
+            error.message ||
+            "Unable to register right now.",
+            "error"
+        );
     }
 }
 
 
-/* =========================================================
+/* =====================================================
+   LOGIN
+   ===================================================== */
+
+async function submitLogin(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const email =
+        $("loginEmail")
+            ?.value
+            .trim();
+
+
+    const password =
+        $("loginPassword")
+            ?.value;
+
+
+    const rememberMe =
+        $("rememberMe")
+            ?.checked;
+
+
+    if (
+        !email ||
+        !password
+    ) {
+
+        showNotification(
+            "Please enter your email and password.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        password.length < 6
+    ) {
+
+        showNotification(
+            "Password must contain at least 6 characters.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/auth/login",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            email,
+                            password
+                        })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Invalid email or password."
+            );
+        }
+
+
+        const donor =
+            data.donor ||
+            {};
+
+
+        saveDonor(
+            donor,
+            rememberMe
+        );
+
+
+        showNotification(
+            "Login successful! Welcome back.",
+            "success"
+        );
+
+
+        setTimeout(
+            () => {
+
+                showDashboard(
+
+                    donor.name ||
+                        "BloodConnect Donor",
+
+                    donor.blood_group ||
+                        "O+",
+
+                    donor.availability
+                );
+
+            },
+            300
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Login error:",
+            error
+        );
+
+
+        showNotification(
+            error.message ||
+            "Unable to login right now.",
+            "error"
+        );
+    }
+}
+
+
+/* =====================================================
    NAVBAR LOGIN STATE
-   ========================================================= */
+   ===================================================== */
 
 function updateNavbarForLoginState(
-    isLoggedIn
+    loggedIn
 ) {
 
     document
         .querySelectorAll(
-            ".nav-actions button, .nav-actions a"
+            ".nav-actions a, .nav-actions button, a[href='#login']"
         )
-        .forEach(element => {
+        .forEach(
+            element => {
 
-            const text =
-                element.textContent
-                    .trim()
-                    .toLowerCase();
+                const text =
+                    element.textContent
+                        .trim()
+                        .toLowerCase();
 
-            if (
-                text === "login" ||
-                text === "dashboard"
-            ) {
+
+                if (
+                    text !== "login" &&
+                    text !== "dashboard"
+                ) {
+                    return;
+                }
+
 
                 element.textContent =
-                    isLoggedIn
+                    loggedIn
                         ? "Dashboard"
                         : "Login";
 
+
                 element.setAttribute(
                     "href",
-                    isLoggedIn
+                    loggedIn
                         ? "#dashboard"
                         : "#login"
                 );
             }
-        });
+        );
 }
 
 
-/* =========================================================
-   AVAILABILITY UI
-   ========================================================= */
-
-const availabilityToggle =
-    $("availabilityToggle");
-
-const availabilityStatus =
-    $("dashboardAvailability");
-
-const availabilityMessage =
-    $("availabilityMessage");
+/* =====================================================
+   AVAILABILITY
+   ===================================================== */
 
 function updateAvailabilityUI(
-    isAvailable
+    available
 ) {
 
-    if (availabilityToggle) {
-        availabilityToggle.checked =
-            isAvailable;
+    const toggle =
+        $("availabilityToggle");
+
+
+    const status =
+        $("dashboardAvailability");
+
+
+    const message =
+        $("availabilityMessage");
+
+
+    if (toggle) {
+
+        toggle.checked =
+            available;
     }
 
-    if (availabilityStatus) {
 
-        availabilityStatus.textContent =
-            isAvailable
+    if (status) {
+
+        status.textContent =
+            available
                 ? "Available"
                 : "Unavailable";
 
-        availabilityStatus.style.color =
-            isAvailable
+
+        status.style.color =
+            available
                 ? "var(--success)"
                 : "var(--muted)";
     }
 
-    if (availabilityMessage) {
 
-        availabilityMessage.textContent =
-            isAvailable
+    if (message) {
+
+        message.textContent =
+
+            available
+
                 ? "Your profile is currently visible to people searching for donors."
+
                 : "Your profile is hidden from new donor searches.";
     }
 }
 
 
-/* =========================================================
-   SHOW DASHBOARD
-   ========================================================= */
+async function updateAvailability(
+    event
+) {
+
+    const donor =
+        getLoggedInDonor();
+
+
+    if (!donor?.id) {
+
+        event.target.checked =
+            !event.target.checked;
+
+
+        showNotification(
+            "Please login again to update your availability.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const oldValue =
+        Number(
+            donor.availability
+        ) === 1
+            ? 1
+            : 0;
+
+
+    const newValue =
+        event.target.checked
+            ? 1
+            : 0;
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/donors/${encodeURIComponent(
+                    donor.id
+                )}/availability`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            availability:
+                                newValue
+                        })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Availability update failed."
+            );
+        }
+
+
+        donor.availability =
+            newValue;
+
+
+        const storage =
+            localStorage.getItem(
+                "bloodconnect-donor"
+            )
+                ? localStorage
+                : sessionStorage;
+
+
+        storage.setItem(
+            "bloodconnect-donor",
+            JSON.stringify(
+                donor
+            )
+        );
+
+
+        updateAvailabilityUI(
+            newValue === 1
+        );
+
+
+        showNotification(
+
+            newValue === 1
+
+                ? "You are now available for blood requests."
+
+                : "Your donor availability has been turned off.",
+
+            "success"
+        );
+
+
+    } catch (error) {
+
+        event.target.checked =
+            oldValue === 1;
+
+
+        updateAvailabilityUI(
+            oldValue === 1
+        );
+
+
+        showNotification(
+            error.message ||
+            "Unable to update availability.",
+            "error"
+        );
+    }
+}
+
+
+/* =====================================================
+   DASHBOARD
+   ===================================================== */
 
 function showDashboard(
     name,
@@ -1395,354 +2347,1196 @@ function showDashboard(
     availability = 1
 ) {
 
+    const dashboard =
+        $("dashboard");
+
+
     if (!dashboard) {
         return;
     }
 
+
     const dashboardName =
         $("dashboardName");
+
 
     const sidebarName =
         $("sidebarName");
 
+
     const dashboardAvatar =
         $("dashboardAvatar");
+
 
     const dashboardBloodGroup =
         $("dashboardBloodGroup");
 
+
     if (dashboardName) {
-        dashboardName.textContent = name;
+
+        dashboardName.textContent =
+            name;
     }
 
+
     if (sidebarName) {
-        sidebarName.textContent = name;
+
+        sidebarName.textContent =
+            name;
     }
+
 
     if (dashboardAvatar) {
 
         dashboardAvatar.textContent =
-            name
+            (
+                name ||
+                "D"
+            )
                 .charAt(0)
                 .toUpperCase();
     }
 
+
     if (dashboardBloodGroup) {
 
         dashboardBloodGroup.textContent =
-            bloodGroup || "O+";
+            bloodGroup ||
+            "O+";
     }
+
 
     updateAvailabilityUI(
         Number(availability) === 1
     );
 
-    dashboard.classList.add("show");
+
+    dashboard.classList.add(
+        "show"
+    );
+
+
+    const loginSection =
+        $("login");
+
 
     if (loginSection) {
-        loginSection.style.display = "none";
+
+        loginSection.style.display =
+            "none";
     }
 
-    updateNavbarForLoginState(true);
+
+    updateNavbarForLoginState(
+        true
+    );
+
 
     const donor =
         getLoggedInDonor();
 
+
     if (donor?.id) {
 
-        ensureIncomingRequestsUI();
+        startRequesterStatusPollingFromStorage();
 
-        loadIncomingBloodRequests(
+        loadRequesterRequestsForDashboard(
             donor.id
         );
     }
 
-    setTimeout(() => {
 
-        dashboard.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
+    setTimeout(
+        () => {
 
-    }, 150);
-}
+            dashboard.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
 
-
-/* =========================================================
-   LOGIN FORM
-   ========================================================= */
-
-if (loginForm) {
-
-    loginForm.addEventListener(
-        "submit",
-        async event => {
-
-            event.preventDefault();
-
-            const email =
-                $("loginEmail")
-                    ?.value
-                    .trim();
-
-            const password =
-                $("loginPassword")
-                    ?.value;
-
-            const rememberMe =
-                $("rememberMe")
-                    ?.checked;
-
-            if (!email || !password) {
-
-                showNotification(
-                    "Please enter your email and password.",
-                    "error"
-                );
-
-                return;
-            }
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/api/auth/login",
-                        {
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    email,
-                                    password
-                                })
-                        }
-                    );
-
-                const data =
-                    await response.json();
-
-                if (
-                    !response.ok ||
-                    !data.success
-                ) {
-
-                    throw new Error(
-                        data.message ||
-                        "Invalid email or password."
-                    );
-                }
-
-                const donor =
-                    data.donor || {};
-
-                if (!donor.id) {
-
-                    throw new Error(
-                        "Donor information was not returned."
-                    );
-                }
-
-                if (rememberMe) {
-
-                    localStorage.setItem(
-                        "bloodconnect-donor",
-                        JSON.stringify(donor)
-                    );
-
-                    sessionStorage.removeItem(
-                        "bloodconnect-donor"
-                    );
-
-                } else {
-
-                    sessionStorage.setItem(
-                        "bloodconnect-donor",
-                        JSON.stringify(donor)
-                    );
-
-                    localStorage.removeItem(
-                        "bloodconnect-donor"
-                    );
-                }
-
-                showNotification(
-                    "Login successful! Welcome back.",
-                    "success"
-                );
-
-                setTimeout(() => {
-
-                    showDashboard(
-                        donor.name ||
-                            "BloodConnect Donor",
-
-                        donor.blood_group ||
-                            donor.bloodGroup ||
-                            "O+",
-
-                        donor.availability
-                    );
-
-                }, 300);
-
-            } catch (error) {
-
-                console.error(
-                    "Login error:",
-                    error
-                );
-
-                showNotification(
-                    error.message ||
-                    "Unable to login right now.",
-                    "error"
-                );
-            }
-
-        }
+        },
+        150
     );
 }
 
 
-/* =========================================================
-   DONOR AVAILABILITY UPDATE
-   ========================================================= */
+/* =====================================================
+   REQUESTER STATUS CSS
+   ===================================================== */
 
-if (availabilityToggle) {
+function injectRequesterStatusStyles() {
 
-    availabilityToggle.addEventListener(
-        "change",
-        async function () {
-
-            const donor =
-                getLoggedInDonor();
-
-            if (!donor?.id) {
-
-                this.checked =
-                    !this.checked;
-
-                showNotification(
-                    "Please login again to update your availability.",
-                    "error"
-                );
-
-                return;
-            }
-
-            const oldAvailability =
-                Number(
-                    donor.availability
-                ) === 1
-                    ? 1
-                    : 0;
-
-            const newAvailability =
-                this.checked ? 1 : 0;
-
-            try {
-
-                const response =
-                    await fetch(
-                        `/api/donors/${donor.id}/availability`,
-                        {
-                            method: "PUT",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    availability:
-                                        newAvailability
-                                })
-                        }
-                    );
-
-                const data =
-                    await response.json();
-
-                if (
-                    !response.ok ||
-                    !data.success
-                ) {
-
-                    throw new Error(
-                        data.message ||
-                        "Availability update failed."
-                    );
-                }
-
-                donor.availability =
-                    newAvailability;
-
-                const storage =
-                    localStorage.getItem(
-                        "bloodconnect-donor"
-                    )
-                        ? localStorage
-                        : sessionStorage;
-
-                storage.setItem(
-                    "bloodconnect-donor",
-                    JSON.stringify(donor)
-                );
-
-                updateAvailabilityUI(
-                    newAvailability === 1
-                );
-
-                showNotification(
-                    newAvailability === 1
-                        ? "You are now available for blood requests."
-                        : "Your donor availability has been turned off.",
-                    "success"
-                );
-
-            } catch (error) {
-
-                this.checked =
-                    oldAvailability === 1;
-
-                updateAvailabilityUI(
-                    oldAvailability === 1
-                );
-
-                showNotification(
-                    error.message ||
-                    "Unable to update availability.",
-                    "error"
-                );
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   INCOMING REQUEST STYLES
-   ========================================================= */
-
-function injectIncomingRequestStyles() {
-
-    if ($("bcIncomingRequestStyles")) {
+    if (
+        $("bcRequesterStatusStyles")
+    ) {
         return;
     }
 
+
     const style =
-        document.createElement("style");
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "bcRequesterStatusStyles";
+
+
+    style.textContent = `
+
+        .bc-requester-status {
+            margin: 24px 0;
+            padding: 22px;
+            border-radius: 20px;
+            background: var(--card-bg, #ffffff);
+            border: 1px solid var(--border, #e5e7eb);
+            box-shadow: 0 12px 35px rgba(0,0,0,.06);
+        }
+
+        .bc-requester-status-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .bc-requester-kicker {
+            margin: 0 0 4px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #ef4444;
+        }
+
+        .bc-requester-title {
+            margin: 0;
+            color: var(--text, #111827);
+            font-size: 21px;
+        }
+
+        .bc-requester-badge {
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .bc-requester-card {
+            padding: 18px;
+            border-radius: 16px;
+            background: var(--surface, #fafafa);
+            border: 1px solid var(--border, #e5e7eb);
+        }
+
+        .bc-requester-card.accepted {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+
+        .bc-requester-card-title {
+            margin-bottom: 8px;
+            color: var(--text, #111827);
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .bc-requester-meta {
+            color: var(--muted, #64748b);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .bc-requester-success {
+            margin-top: 14px;
+            padding: 13px 15px;
+            border-radius: 12px;
+            background: #dcfce7;
+            color: #166534;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        .bc-requester-contact {
+            display: inline-flex;
+            margin-top: 10px;
+            padding: 9px 13px;
+            border-radius: 10px;
+            background: #16a34a;
+            color: white;
+            text-decoration: none;
+            font-weight: 800;
+        }
+
+        .bc-requester-notification {
+            margin-top: 14px;
+            padding: 15px 16px;
+            border-radius: 14px;
+            background: linear-gradient(
+                135deg,
+                #ecfdf5,
+                #dcfce7
+            );
+            border: 1px solid #86efac;
+            color: #166534;
+            font-weight: 800;
+        }
+
+        [data-theme="dark"]
+        .bc-requester-status {
+            background: #111827;
+            border-color: #273449;
+        }
+
+        [data-theme="dark"]
+        .bc-requester-card {
+            background: #172033;
+            border-color: #334155;
+        }
+
+        [data-theme="dark"]
+        .bc-requester-card.accepted {
+            background: #10251a;
+            border-color: #166534;
+        }
+
+        [data-theme="dark"]
+        .bc-requester-title,
+
+        [data-theme="dark"]
+        .bc-requester-card-title {
+            color: #f8fafc;
+        }
+
+        [data-theme="dark"]
+        .bc-requester-meta {
+            color: #94a3b8;
+        }
+
+        @media (max-width: 700px) {
+
+            .bc-requester-status {
+                padding: 18px;
+            }
+
+            .bc-requester-status-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+/* =====================================================
+   REQUESTER STATUS UI
+   ===================================================== */
+
+function getRequestContainer() {
+
+    const dashboard =
+        $("dashboard");
+
+
+    if (!dashboard) {
+        return null;
+    }
+
+
+    return (
+
+        dashboard.querySelector(
+            ".dashboard-content"
+        )
+
+        ||
+
+        dashboard.querySelector(
+            ".dashboard-main"
+        )
+
+        ||
+
+        dashboard.querySelector(
+            ".dashboard-body"
+        )
+
+        ||
+
+        dashboard
+    );
+}
+
+
+function ensureRequesterStatusUI() {
+
+    if (!$("dashboard")) {
+        return null;
+    }
+
+
+    injectRequesterStatusStyles();
+
+
+    let section =
+        $("bcRequesterStatus");
+
+
+    if (section) {
+        return section;
+    }
+
+
+    section =
+        document.createElement(
+            "section"
+        );
+
+
+    section.id =
+        "bcRequesterStatus";
+
+
+    section.className =
+        "bc-requester-status";
+
+
+    section.innerHTML = `
+
+        <div class="bc-requester-status-header">
+
+            <div>
+
+                <p class="bc-requester-kicker">
+                    Your Blood Request
+                </p>
+
+                <h3 class="bc-requester-title">
+                    Request status
+                </h3>
+
+            </div>
+
+
+            <span
+                class="bc-requester-badge"
+                id="bcRequesterBadge"
+            >
+                Checking...
+            </span>
+
+        </div>
+
+
+        <div
+            id="bcRequesterStatusCard"
+            class="bc-requester-card"
+        >
+
+            <div class="bc-requester-card-title">
+                Checking your latest request...
+            </div>
+
+        </div>
+    `;
+
+
+    const container =
+        getRequestContainer();
+
+
+    if (container) {
+
+        const incoming =
+            $("bcIncomingRequests");
+
+
+        if (
+            incoming &&
+            incoming.parentElement ===
+                container
+        ) {
+
+            container.insertBefore(
+                section,
+                incoming
+            );
+
+        } else {
+
+            container.appendChild(
+                section
+            );
+        }
+    }
+
+
+    return section;
+}
+
+
+/* =====================================================
+   LAST REQUEST ID
+   ===================================================== */
+
+function getLastRequesterRequestId() {
+
+    const value =
+
+        localStorage.getItem(
+            "bloodconnect-last-request"
+        )
+
+        ||
+
+        sessionStorage.getItem(
+            "bloodconnect-last-request"
+        );
+
+
+    const id =
+        Number(value);
+
+
+    return (
+
+        Number.isInteger(id) &&
+        id > 0
+
+    )
+        ? id
+        : null;
+}
+
+
+/* =====================================================
+   REQUEST STATUS RENDER
+   ===================================================== */
+
+function renderRequesterRequestStatus(
+    request
+) {
+
+    const section =
+        ensureRequesterStatusUI();
+
+
+    const card =
+        $("bcRequesterStatusCard");
+
+
+    const badge =
+        $("bcRequesterBadge");
+
+
+    if (
+        !section ||
+        !card
+    ) {
+        return;
+    }
+
+
+    const status =
+        request?.status ||
+        "Pending";
+
+
+    if (badge) {
+
+        badge.textContent =
+            status;
+    }
+
+
+    /* =================================================
+       ACCEPTED
+       ================================================= */
+
+    if (
+        status ===
+        "Accepted"
+    ) {
+
+        card.className =
+            "bc-requester-card accepted";
+
+
+        const donorName =
+            request.donor_name ||
+            "A donor";
+
+
+        const donorPhone =
+            request.donor_phone ||
+            "";
+
+
+        card.innerHTML = `
+
+            <div class="bc-requester-card-title">
+
+                🩸 Your blood request has been accepted
+
+            </div>
+
+
+            <div class="bc-requester-meta">
+
+                ${escapeHtml(
+                    request.patient_name ||
+                    "Patient"
+                )}
+
+                •
+                ${escapeHtml(
+                    request.blood_group ||
+                    "—"
+                )}
+
+                •
+                ${escapeHtml(
+                    request.units_required ||
+                    0
+                )}
+                unit(s)
+
+                <br>
+
+                ${escapeHtml(
+                    request.hospital_name ||
+                    "Hospital not provided"
+                )}
+
+                •
+                ${escapeHtml(
+                    request.city ||
+                    "Location not provided"
+                )}
+
+            </div>
+
+
+            <div class="bc-requester-notification">
+
+                ✓
+
+                ${escapeHtml(
+                    donorName
+                )}
+
+                has accepted your blood request.
+
+
+                ${
+                    donorPhone
+
+                        ? `
+                            <br>
+
+                            <a
+                                class="bc-requester-contact"
+                                href="tel:${escapeHtml(
+                                    donorPhone
+                                )}"
+                            >
+                                📞 Contact
+                                ${escapeHtml(
+                                    donorName
+                                )}
+                            </a>
+                        `
+
+                        : ""
+                }
+
+            </div>
+        `;
+
+
+        return;
+    }
+
+
+    /* =================================================
+       PENDING
+       ================================================= */
+
+    card.className =
+        "bc-requester-card";
+
+
+    card.innerHTML = `
+
+        <div class="bc-requester-card-title">
+
+            ⏳ Waiting for donor response
+
+        </div>
+
+
+        <div class="bc-requester-meta">
+
+            ${escapeHtml(
+                request?.patient_name ||
+                "Patient"
+            )}
+
+            •
+            ${escapeHtml(
+                request?.blood_group ||
+                "—"
+            )}
+
+            •
+            ${escapeHtml(
+                request?.units_required ||
+                0
+            )}
+            unit(s)
+
+            <br>
+
+            ${escapeHtml(
+                request?.hospital_name ||
+                "Hospital not provided"
+            )}
+
+            •
+            ${escapeHtml(
+                request?.city ||
+                "Location not provided"
+            )}
+
+        </div>
+    `;
+}
+
+
+/* =====================================================
+   REQUEST ACCEPTED NOTIFICATION
+   ===================================================== */
+
+function notifyRequesterAccepted(
+    request
+) {
+
+    if (
+        !request ||
+        request.status !==
+            "Accepted" ||
+        !request.id
+    ) {
+        return;
+    }
+
+
+    const notificationKey =
+        `bloodconnect-accepted-notified-${request.id}`;
+
+
+    /*
+     * Prevent duplicate notifications.
+     */
+
+    if (
+        localStorage.getItem(
+            notificationKey
+        )
+    ) {
+        return;
+    }
+
+
+    showNotification(
+        `🩸 ${
+            request.donor_name ||
+            "A donor"
+        } has accepted your blood request!`,
+        "success"
+    );
+
+
+    localStorage.setItem(
+        notificationKey,
+        "true"
+    );
+}
+
+
+/* =====================================================
+   LOAD SINGLE REQUEST STATUS
+   ===================================================== */
+
+async function loadRequesterRequestStatus(
+    requestId,
+    silent = false
+) {
+
+    const id =
+        Number(requestId);
+
+
+    if (
+        !Number.isInteger(id) ||
+        id <= 0
+    ) {
+        return null;
+    }
+
+
+    ensureRequesterStatusUI();
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/blood-requests/${encodeURIComponent(
+                    id
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+                data.message ||
+                "Unable to load request status."
+            );
+        }
+
+
+        const request =
+            data.request;
+
+
+        const loggedInDonor =
+            getLoggedInDonor();
+
+
+        if (
+            !loggedInDonor?.id ||
+            Number(request?.requester_id) !==
+            Number(loggedInDonor.id)
+        ) {
+            return null;
+        }
+
+
+        renderRequesterRequestStatus(
+            request
+        );
+
+
+        /*
+         * If donor accepted,
+         * show notification and stop polling.
+         */
+
+        if (
+            request?.status ===
+            "Accepted"
+        ) {
+
+            notifyRequesterAccepted(
+                request
+            );
+
+
+            stopRequesterStatusPolling();
+        }
+
+
+        return request;
+
+
+    } catch (error) {
+
+        console.error(
+            "Requester status error:",
+            error
+        );
+
+
+        if (!silent) {
+
+            const card =
+                $("bcRequesterStatusCard");
+
+
+            if (card) {
+
+                card.innerHTML = `
+
+                    <div class="bc-requester-card-title">
+
+                        Unable to check request status
+
+                    </div>
+
+
+                    <div class="bc-requester-meta">
+
+                        ${escapeHtml(
+                            error.message ||
+                            "Please try again later."
+                        )}
+
+                    </div>
+                `;
+            }
+        }
+
+
+        return null;
+    }
+}
+
+
+/* =====================================================
+   LOAD REQUESTER REQUESTS FOR DASHBOARD
+   ===================================================== */
+
+async function loadRequesterRequestsForDashboard(
+    requesterId
+) {
+
+    if (!requesterId) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/blood-requests/requester/${encodeURIComponent(
+                    requesterId
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok || !data.success) {
+            return;
+        }
+
+
+        const requests =
+            Array.isArray(data.requests)
+                ? data.requests
+                : [];
+
+
+        const latestRequest =
+            requests.length
+                ? requests[0]
+                : null;
+
+
+        if (!latestRequest?.id) {
+            return;
+        }
+
+
+        localStorage.setItem(
+            "bloodconnect-last-request",
+            String(latestRequest.id)
+        );
+
+
+        sessionStorage.setItem(
+            "bloodconnect-last-request",
+            String(latestRequest.id)
+        );
+
+
+        ensureRequesterStatusUI();
+
+        renderRequesterRequestStatus(
+            latestRequest
+        );
+
+
+        if (latestRequest.status === "Pending") {
+            startRequesterStatusPolling(
+                Number(latestRequest.id)
+            );
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Requester dashboard requests error:",
+            error
+        );
+    }
+}
+
+
+/* =====================================================
+   REQUEST STATUS POLLING
+   ===================================================== */
+
+function stopRequesterStatusPolling() {
+
+    if (
+        requesterStatusTimer
+    ) {
+
+        clearInterval(
+            requesterStatusTimer
+        );
+    }
+
+
+    requesterStatusTimer =
+        null;
+
+
+    requesterStatusRequestId =
+        null;
+}
+
+
+function startRequesterStatusPolling(
+    requestId
+) {
+
+    const id =
+        Number(requestId);
+
+
+    if (
+        !Number.isInteger(id) ||
+        id <= 0
+    ) {
+        return;
+    }
+
+
+    ensureRequesterStatusUI();
+
+
+    /*
+     * Don't create multiple timers
+     * for the same request.
+     */
+
+    if (
+        requesterStatusRequestId ===
+            id &&
+        requesterStatusTimer
+    ) {
+        return;
+    }
+
+
+    stopRequesterStatusPolling();
+
+
+    requesterStatusRequestId =
+        id;
+
+
+    /*
+     * Check immediately.
+     */
+
+    loadRequesterRequestStatus(
+        id,
+        true
+    );
+
+
+    /*
+     * Then check every 5 seconds.
+     */
+
+    requesterStatusTimer =
+        setInterval(
+            () => {
+
+                loadRequesterRequestStatus(
+                    id,
+                    true
+                );
+
+            },
+            5000
+        );
+}
+
+
+function startRequesterStatusPollingFromStorage() {
+
+    const requestId =
+        getLastRequesterRequestId();
+
+
+    if (!requestId) {
+        return;
+    }
+
+
+    startRequesterStatusPolling(
+        requestId
+    );
+}
+
+
+/* =====================================================
+   🔥 CROSS-TAB REQUEST DETECTION
+   ===================================================== */
+
+function setupCrossTabRequestListener() {
+
+    /*
+     * localStorage "storage" event fires in
+     * OTHER browser tabs of the same origin.
+     *
+     * This allows Digeesh's already-open tab
+     * to detect a request created in another tab.
+     */
+
+    window.addEventListener(
+        "storage",
+        event => {
+
+            if (
+                event.key ===
+                "bloodconnect-last-request"
+            ) {
+
+                const requestId =
+                    Number(
+                        event.newValue
+                    );
+
+
+                if (
+                    Number.isInteger(
+                        requestId
+                    ) &&
+                    requestId > 0
+                ) {
+
+                    console.log(
+                        "🩸 New BloodConnect request detected:",
+                        requestId
+                    );
+
+
+                    ensureRequesterStatusUI();
+
+
+                    startRequesterStatusPolling(
+                        requestId
+                    );
+
+
+                    loadRequesterRequestStatus(
+                        requestId
+                    );
+                }
+            }
+
+
+            /*
+             * Additional event key.
+             */
+
+            if (
+                event.key ===
+                "bloodconnect-request-updated"
+            ) {
+
+                const requestId =
+                    Number(
+                        String(
+                            event.newValue ||
+                            ""
+                        ).split(
+                            "-"
+                        )[0]
+                    );
+
+
+                if (
+                    Number.isInteger(
+                        requestId
+                    ) &&
+                    requestId > 0
+                ) {
+
+                    console.log(
+                        "🔔 Blood request update detected:",
+                        requestId
+                    );
+
+
+                    ensureRequesterStatusUI();
+
+
+                    startRequesterStatusPolling(
+                        requestId
+                    );
+
+
+                    loadRequesterRequestStatus(
+                        requestId,
+                        true
+                    );
+                }
+            }
+        }
+    );
+}
+
+
+/* =====================================================
+   INCOMING REQUEST CSS
+   ===================================================== */
+
+function injectIncomingRequestStyles() {
+
+    if (
+        $("bcIncomingRequestStyles")
+    ) {
+        return;
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
 
     style.id =
         "bcIncomingRequestStyles";
+
 
     style.textContent = `
 
@@ -1756,348 +3550,293 @@ function injectIncomingRequestStyles() {
         }
 
         .bc-incoming-header {
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:16px;
-            margin-bottom:20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
         .bc-incoming-kicker {
-            margin:0 0 5px;
-            font-size:12px;
-            font-weight:800;
-            letter-spacing:.08em;
-            text-transform:uppercase;
-            color:#ef4444;
+            margin: 0 0 4px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #ef4444;
         }
 
         .bc-incoming-title {
-            margin:0;
-            font-size:22px;
-            color:var(--text,#111827);
+            margin: 0;
+            font-size: 22px;
+            color: var(--text, #111827);
         }
 
         .bc-incoming-count {
-            min-width:40px;
-            height:40px;
-            padding:0 12px;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            border-radius:999px;
-            background:#ef4444;
-            color:#fff;
-            font-weight:800;
+            min-width: 38px;
+            height: 38px;
+            padding: 0 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #ef4444;
+            color: white;
+            font-weight: 800;
         }
 
         .bc-request-list {
-            display:grid;
-            gap:14px;
+            display: grid;
+            gap: 14px;
         }
 
         .bc-request-item {
-            display:grid;
-            grid-template-columns:64px 1fr auto;
-            gap:16px;
-            align-items:center;
-            padding:18px;
-            border-radius:16px;
-            border:1px solid var(--border,#e5e7eb);
-            background:var(--surface,#fafafa);
+            display: grid;
+            grid-template-columns: 64px 1fr auto;
+            gap: 16px;
+            align-items: center;
+            padding: 18px;
+            border-radius: 16px;
+            border: 1px solid var(--border, #e5e7eb);
+            background: var(--surface, #fafafa);
         }
 
         .bc-request-blood {
-            width:58px;
-            height:58px;
-            border-radius:16px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:#fee2e2;
-            color:#dc2626;
-            font-size:17px;
-            font-weight:900;
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 17px;
+            font-weight: 900;
         }
 
         .bc-request-main strong {
-            display:block;
-            margin-bottom:6px;
-            color:var(--text,#111827);
-            font-size:16px;
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text, #111827);
+            font-size: 16px;
         }
 
         .bc-request-meta {
-            color:var(--muted,#64748b);
-            font-size:13px;
-            line-height:1.7;
+            color: var(--muted, #64748b);
+            font-size: 13px;
+            line-height: 1.7;
         }
 
         .bc-request-message {
-            margin-top:8px;
-            color:var(--muted,#64748b);
-            font-size:13px;
+            margin-top: 8px;
+            color: var(--muted, #64748b);
+            font-size: 13px;
+            line-height: 1.5;
         }
 
         .bc-request-side {
-            min-width:180px;
-            text-align:right;
+            min-width: 150px;
+            text-align: right;
         }
 
         .bc-request-urgency {
-            display:inline-flex;
-            padding:5px 10px;
-            border-radius:999px;
-            font-size:11px;
-            font-weight:800;
+            display: inline-flex;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
         }
 
         .bc-request-urgency.critical {
-            background:#fee2e2;
-            color:#b91c1c;
+            background: #fee2e2;
+            color: #b91c1c;
         }
 
         .bc-request-urgency.urgent {
-            background:#ffedd5;
-            color:#c2410c;
+            background: #ffedd5;
+            color: #c2410c;
         }
 
         .bc-request-urgency.normal {
-            background:#dcfce7;
-            color:#15803d;
+            background: #dcfce7;
+            color: #15803d;
         }
 
         .bc-request-date {
-            margin-top:7px;
-            color:var(--muted,#64748b);
-            font-size:11px;
+            margin-top: 7px;
+            color: var(--muted, #64748b);
+            font-size: 11px;
         }
 
-        .bc-accept-btn {
-            width:100%;
-            margin-top:12px;
-            padding:11px 14px;
-            border:0;
-            border-radius:10px;
-            background:#ef4444;
-            color:#fff;
-            font-weight:800;
-            cursor:pointer;
-            transition:.2s ease;
+        .bc-request-accept {
+            margin-top: 12px;
+            padding: 10px 13px;
+            border: 0;
+            border-radius: 10px;
+            background: #16a34a;
+            color: white;
+            cursor: pointer;
+            font-weight: 800;
         }
 
-        .bc-accept-btn:hover {
-            transform:translateY(-1px);
-            filter:brightness(.95);
+        .bc-request-accept:hover {
+            transform: translateY(-1px);
         }
 
-        .bc-accept-btn:disabled {
-            opacity:.65;
-            cursor:not-allowed;
-            transform:none;
+        .bc-request-accept:disabled {
+            opacity: .65;
+            cursor: wait;
         }
 
-        .bc-accepted-badge {
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            margin-top:12px;
-            padding:9px 12px;
-            border-radius:10px;
-            background:#dcfce7;
-            color:#15803d;
-            font-size:12px;
-            font-weight:800;
+        .bc-request-contact {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
         }
 
-        .bc-request-status {
-            margin-top:10px;
-            padding:9px 12px;
-            border-radius:10px;
-            font-size:12px;
-            font-weight:800;
-        }
 
-        .bc-request-status.pending {
-            background:#fef3c7;
-            color:#92400e;
-        }
-
-        .bc-request-status.accepted {
-            background:#dcfce7;
-            color:#15803d;
+        .bc-request-accepted {
+            margin-top: 12px;
+            padding: 10px 13px;
+            border-radius: 10px;
+            background: #dcfce7;
+            color: #15803d;
+            font-size: 12px;
+            font-weight: 800;
         }
 
         .bc-request-empty {
-            padding:35px 20px;
-            text-align:center;
-            color:var(--muted,#64748b);
-            border:1px dashed var(--border,#cbd5e1);
-            border-radius:16px;
+            padding: 35px 20px;
+            text-align: center;
+            color: var(--muted, #64748b);
+            border: 1px dashed var(--border, #cbd5e1);
+            border-radius: 16px;
         }
 
         .bc-request-empty strong {
-            display:block;
-            color:var(--text,#111827);
+            display: block;
+            color: var(--text, #111827);
         }
 
         .bc-request-empty-icon {
-            display:block;
-            margin-bottom:8px;
-            font-size:30px;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 30px;
         }
 
         .bc-request-refresh {
-            margin-top:10px;
-            padding:9px 15px;
-            border:0;
-            border-radius:10px;
-            background:#ef4444;
-            color:#fff;
-            cursor:pointer;
-            font-weight:700;
+            margin-top: 10px;
+            padding: 9px 15px;
+            border: 0;
+            border-radius: 10px;
+            background: #ef4444;
+            color: white;
+            cursor: pointer;
+            font-weight: 700;
         }
 
-        .bc-requester-status {
-            margin:24px 0;
-            padding:22px;
-            border-radius:18px;
-            background:var(--card-bg,#fff);
-            border:1px solid var(--border,#e5e7eb);
+        [data-theme="dark"]
+        .bc-incoming-requests {
+            background: #111827;
+            border-color: #273449;
         }
 
-        .bc-requester-status h3 {
-            margin:0 0 5px;
-            color:var(--text,#111827);
+        [data-theme="dark"]
+        .bc-request-item {
+            background: #172033;
+            border-color: #334155;
         }
 
-        .bc-requester-status p {
-            margin:5px 0;
-            color:var(--muted,#64748b);
+        [data-theme="dark"]
+        .bc-request-main strong,
+        [data-theme="dark"]
+        .bc-request-empty strong {
+            color: #f8fafc;
         }
 
-        .bc-requester-status-card {
-            margin-top:15px;
-            padding:16px;
-            border-radius:14px;
-            background:var(--surface,#fafafa);
+        [data-theme="dark"]
+        .bc-request-meta,
+        [data-theme="dark"]
+        .bc-request-message,
+        [data-theme="dark"]
+        .bc-request-date,
+        [data-theme="dark"]
+        .bc-request-empty {
+            color: #94a3b8;
         }
 
-        .bc-requester-accepted {
-            margin-top:15px;
-            padding:15px;
-            border-radius:14px;
-            background:#dcfce7;
-            color:#166534;
-        }
+        @media (max-width: 700px) {
 
-        .bc-requester-pending {
-            margin-top:15px;
-            padding:15px;
-            border-radius:14px;
-            background:#fef3c7;
-            color:#92400e;
-        }
-
-        [data-theme="dark"] .bc-incoming-requests,
-        [data-theme="dark"] .bc-requester-status {
-            background:#111827;
-            border-color:#273449;
-        }
-
-        [data-theme="dark"] .bc-request-item,
-        [data-theme="dark"] .bc-requester-status-card {
-            background:#172033;
-            border-color:#334155;
-        }
-
-        [data-theme="dark"] .bc-incoming-title,
-        [data-theme="dark"] .bc-request-main strong,
-        [data-theme="dark"] .bc-request-empty strong,
-        [data-theme="dark"] .bc-requester-status h3 {
-            color:#f8fafc;
-        }
-
-        @media(max-width:700px) {
-
-            .bc-incoming-requests,
-            .bc-requester-status {
-                padding:18px;
+            .bc-incoming-requests {
+                padding: 18px;
             }
 
             .bc-request-item {
-                grid-template-columns:52px 1fr;
+                grid-template-columns: 52px 1fr;
             }
 
             .bc-request-blood {
-                width:50px;
-                height:50px;
+                width: 50px;
+                height: 50px;
             }
 
             .bc-request-side {
-                grid-column:2;
-                min-width:0;
-                text-align:left;
+                grid-column: 2;
+                min-width: 0;
+                text-align: left;
             }
         }
     `;
 
-    document.head.appendChild(style);
-}
 
-
-/* =========================================================
-   DASHBOARD REQUEST CONTAINER
-   ========================================================= */
-
-function getRequestContainer() {
-
-    if (!dashboard) {
-        return null;
-    }
-
-    return (
-        dashboard.querySelector(
-            ".dashboard-content"
-        ) ||
-        dashboard.querySelector(
-            ".dashboard-main"
-        ) ||
-        dashboard.querySelector(
-            ".dashboard-body"
-        ) ||
-        dashboard
+    document.head.appendChild(
+        style
     );
 }
 
 
-/* =========================================================
-   CREATE INCOMING REQUEST UI
-   ========================================================= */
+/* =====================================================
+   INCOMING REQUEST UI
+   ===================================================== */
 
 function ensureIncomingRequestsUI() {
+
+    const dashboard =
+        $("dashboard");
+
 
     if (!dashboard) {
         return null;
     }
 
+
     injectIncomingRequestStyles();
+
 
     let section =
         $("bcIncomingRequests");
+
 
     if (section) {
         return section;
     }
 
+
     section =
-        document.createElement("section");
+        document.createElement(
+            "section"
+        );
+
 
     section.id =
         "bcIncomingRequests";
 
+
     section.className =
         "bc-incoming-requests";
+
 
     section.innerHTML = `
 
@@ -2115,6 +3854,7 @@ function ensureIncomingRequestsUI() {
 
             </div>
 
+
             <span
                 class="bc-incoming-count"
                 id="bcIncomingRequestCount"
@@ -2124,94 +3864,82 @@ function ensureIncomingRequestsUI() {
 
         </div>
 
+
         <div
             class="bc-request-list"
             id="bcIncomingRequestList"
         >
 
             <div class="bc-request-empty">
+
                 <span class="bc-request-empty-icon">
                     🩸
                 </span>
 
                 Loading your blood requests...
+
             </div>
 
         </div>
     `;
 
+
     const container =
         getRequestContainer();
 
+
     if (container) {
 
-        const recentSection =
-            Array.from(
-                container.querySelectorAll(
-                    "section, article, .card, .dashboard-card"
-                )
-            ).find(element =>
-                element.textContent
-                    .toLowerCase()
-                    .includes("recent requests")
-            );
-
-        if (
-            recentSection &&
-            recentSection.parentElement === container
-        ) {
-
-            container.insertBefore(
-                section,
-                recentSection
-            );
-
-        } else {
-
-            container.appendChild(section);
-        }
+        container.appendChild(
+            section
+        );
     }
+
 
     return section;
 }
 
 
-/* =========================================================
+/* =====================================================
    RENDER INCOMING REQUESTS
-   ========================================================= */
+   ===================================================== */
 
 function renderIncomingBloodRequests(
     requests
 ) {
 
-    const section =
-        ensureIncomingRequestsUI();
+    ensureIncomingRequestsUI();
 
-    if (!section) {
-        return;
-    }
 
     const list =
         $("bcIncomingRequestList");
 
+
     const count =
         $("bcIncomingRequestCount");
+
 
     const safeRequests =
         Array.isArray(requests)
             ? requests
             : [];
 
+
     if (count) {
+
         count.textContent =
             safeRequests.length;
     }
+
 
     if (!list) {
         return;
     }
 
-    if (safeRequests.length === 0) {
+
+    if (
+        safeRequests.length === 0
+    ) {
 
         list.innerHTML = `
 
@@ -2236,202 +3964,249 @@ function renderIncomingBloodRequests(
         return;
     }
 
+
     list.innerHTML =
         safeRequests
-            .map(request => {
+            .map(
+                request => {
 
-                const urgency =
-                    request.urgency ||
-                    "Normal";
-
-                const urgencyClass =
-                    getUrgencyClass(
-                        urgency
-                    );
-
-                const status =
-                    request.status ||
-                    "Pending";
-
-                const isAccepted =
-                    status === "Accepted";
-
-                return `
-
-                    <article
-                        class="bc-request-item"
-                    >
-
-                        <div class="bc-request-blood">
-                            ${escapeHtml(
-                                request.blood_group ||
-                                "—"
-                            )}
-                        </div>
+                    const urgency =
+                        request.urgency ||
+                        "Normal";
 
 
-                        <div class="bc-request-main">
+                    const urgencyClass =
+                        getUrgencyClass(
+                            urgency
+                        );
 
-                            <strong>
-                                ${escapeHtml(
-                                    request.patient_name ||
-                                    "Patient"
-                                )}
-                            </strong>
 
-                            <div class="bc-request-meta">
+                    return `
 
-                                🏥
-                                ${escapeHtml(
-                                    request.hospital_name ||
-                                    "Hospital not provided"
-                                )}
-
-                                <br>
-
-                                📍
-                                ${escapeHtml(
-                                    request.city ||
-                                    "Location not provided"
-                                )}
-
-                                &nbsp; • &nbsp;
-
-                                💉
-                                ${escapeHtml(
-                                    request.units_required ||
-                                    0
-                                )}
-                                unit(s)
-
-                            </div>
-
-                            <div class="bc-request-message">
-
-                                ${
-                                    request.message
-                                        ? escapeHtml(
-                                            request.message
-                                        )
-                                        : "No additional message provided."
-                                }
-
-                            </div>
+                        <article
+                            class="bc-request-item"
+                        >
 
                             <div
-                                class="bc-request-status ${
-                                    isAccepted
-                                        ? "accepted"
-                                        : "pending"
-                                }"
+                                class="bc-request-blood"
                             >
+
+                                ${escapeHtml(
+                                    request.blood_group ||
+                                    "—"
+                                )}
+
+                            </div>
+
+
+                            <div
+                                class="bc-request-main"
+                            >
+
+                                <strong>
+
+                                    ${escapeHtml(
+                                        request.patient_name ||
+                                        "Patient"
+                                    )}
+
+                                </strong>
+
+
+                                <div
+                                    class="bc-request-meta"
+                                >
+
+                                    🏥
+
+                                    ${escapeHtml(
+                                        request.hospital_name ||
+                                        "Hospital not provided"
+                                    )}
+
+                                    <br>
+
+                                    📍
+
+                                    ${escapeHtml(
+                                        request.city ||
+                                        "Location not provided"
+                                    )}
+
+                                    &nbsp; • &nbsp;
+
+                                    💉
+
+                                    ${escapeHtml(
+                                        request.units_required ||
+                                        0
+                                    )}
+
+                                    unit(s)
+
+                                </div>
+
+
+                                <div
+                                    class="bc-request-message"
+                                >
+
+                                    ${escapeHtml(
+                                        request.message ||
+                                        "No additional message provided."
+                                    )}
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                class="bc-request-side"
+                            >
+
+                                <span
+                                    class="bc-request-urgency ${urgencyClass}"
+                                >
+
+                                    ${escapeHtml(
+                                        urgency
+                                    )}
+
+                                </span>
+
+
+                                <div
+                                    class="bc-request-date"
+                                >
+
+                                    Needed:
+
+                                    ${escapeHtml(
+                                        formatRequestDate(
+                                            request.required_date
+                                        )
+                                    )}
+
+                                </div>
+
+
+                                <div
+                                    class="bc-request-date"
+                                >
+
+                                    ${escapeHtml(
+                                        formatRequestDateTime(
+                                            request.created_at
+                                        )
+                                    )}
+
+                                </div>
+
+
                                 ${
-                                    isAccepted
-                                        ? "✓ Request Accepted"
-                                        : "Waiting for donor response"
-                                }
-                            </div>
+    request.status ===
+    "Accepted"
 
-                        </div>
+        ? `
+            <div
+                class="bc-request-accepted"
+            >
+                ✓ Request Accepted
+            </div>
 
+            <div
+                class="bc-requester-info"
+            >
+                <strong>
+                    Requester:
+                    ${escapeHtml(
+                        request.requester_name ||
+                        "Requester"
+                    )}
+                </strong>
 
-                        <div class="bc-request-side">
+                ${
+                    request.requester_phone
+                        ? `
+                            <br>
 
-                            <span
-                                class="bc-request-urgency ${urgencyClass}"
+                            <a
+                                class="bc-request-contact"
+                                href="tel:${escapeHtml(
+                                    request.requester_phone
+                                )}"
                             >
+                                📞 Contact
                                 ${escapeHtml(
-                                    urgency
+                                    request.requester_name ||
+                                    "Requester"
                                 )}
+                            </a>
+                        `
+                        : `
+                            <br>
+                            <span>
+                                Contact number unavailable
                             </span>
+                        `
+                }
+            </div>
+        `
 
-
-                            <div class="bc-request-date">
-                                Needed:
-                                ${escapeHtml(
-                                    formatRequestDate(
-                                        request.required_date
-                                    )
-                                )}
+        : `
+            <button
+                type="button"
+                class="bc-request-accept"
+                data-request-id="${Number(
+                    request.id
+                )}"
+            >
+                ❤️ I Can Donate
+            </button>
+        `
+}
                             </div>
 
-
-                            <div class="bc-request-date">
-                                ${escapeHtml(
-                                    formatRequestDateTime(
-                                        request.created_at
-                                    )
-                                )}
-                            </div>
-
-
-                            ${
-                                isAccepted
-
-                                    ? `
-
-                                        <div
-                                            class="bc-accepted-badge"
-                                        >
-                                            ✓ You accepted
-                                        </div>
-
-                                    `
-
-                                    : `
-
-                                        <button
-                                            type="button"
-                                            class="bc-accept-btn"
-                                            data-request-id="${Number(
-                                                request.id
-                                            )}"
-                                        >
-                                            ❤️ I Can Donate
-                                        </button>
-
-                                    `
-                            }
-
-                        </div>
-
-                    </article>
-                `;
-
-            })
+                        </article>
+                    `;
+                }
+            )
             .join("");
 
 
-    /*
-     * Attach accept button events
-     */
-
     list
-        .querySelectorAll(".bc-accept-btn")
-        .forEach(button => {
+        .querySelectorAll(
+            ".bc-request-accept"
+        )
+        .forEach(
+            button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                    const requestId =
-                        Number(
-                            button.dataset.requestId
+                        const requestId =
+                            Number(
+                                button.dataset
+                                    .requestId
+                            );
+
+
+                        acceptBloodRequest(
+                            requestId,
+                            button
                         );
-
-                    acceptBloodRequest(
-                        requestId,
-                        button
-                    );
-                }
-            );
-        });
+                    }
+                );
+            }
+        );
 }
 
 
-/* =========================================================
+/* =====================================================
    LOAD INCOMING REQUESTS
-   ========================================================= */
+   ===================================================== */
 
 async function loadIncomingBloodRequests(
     donorId,
@@ -2442,14 +4217,20 @@ async function loadIncomingBloodRequests(
         return;
     }
 
+
     ensureIncomingRequestsUI();
+
 
     const list =
         $("bcIncomingRequestList");
 
+
     try {
 
-        if (!silent && list) {
+        if (
+            !silent &&
+            list
+        ) {
 
             list.innerHTML = `
 
@@ -2465,6 +4246,7 @@ async function loadIncomingBloodRequests(
             `;
         }
 
+
         const response =
             await fetch(
                 `/api/blood-requests/donor/${encodeURIComponent(
@@ -2472,8 +4254,10 @@ async function loadIncomingBloodRequests(
                 )}`
             );
 
+
         const data =
             await response.json();
+
 
         if (
             !response.ok ||
@@ -2486,19 +4270,40 @@ async function loadIncomingBloodRequests(
             );
         }
 
+
         incomingRequestsLoadedFor =
-            Number(donorId);
+            Number(
+                donorId
+            );
+
+
+        const requests =
+            data.requests ||
+            [];
+
+
+        if (!requests.length) {
+
+            $("bcIncomingRequestsSection")?.remove();
+
+            incomingRequestsLoadedFor = null;
+
+            return;
+        }
+
 
         renderIncomingBloodRequests(
-            data.requests || []
+            requests
         );
+
 
     } catch (error) {
 
         console.error(
-            "Incoming requests error:",
+            "Incoming blood requests error:",
             error
         );
+
 
         if (list) {
 
@@ -2526,26 +4331,26 @@ async function loadIncomingBloodRequests(
                 </div>
             `;
 
+
             list
                 .querySelector(
                     ".bc-request-refresh"
                 )
                 ?.addEventListener(
                     "click",
-                    () => {
+                    () =>
                         loadIncomingBloodRequests(
                             donorId
-                        );
-                    }
+                        )
                 );
         }
     }
 }
 
 
-/* =========================================================
+/* =====================================================
    ACCEPT BLOOD REQUEST
-   ========================================================= */
+   ===================================================== */
 
 async function acceptBloodRequest(
     requestId,
@@ -2555,42 +4360,41 @@ async function acceptBloodRequest(
     const donor =
         getLoggedInDonor();
 
+
     if (!donor?.id) {
 
         showNotification(
-            "Please login again to accept this request.",
+            "Please login again before accepting a request.",
             "error"
         );
 
         return;
     }
 
-    if (!requestId) {
-        return;
-    }
+
+    const id =
+        Number(requestId);
 
 
-    /*
-     * Confirmation
-     */
+    if (
+        !Number.isInteger(id) ||
+        id <= 0
+    ) {
 
-    const confirmed =
-        window.confirm(
-            "Are you sure you want to donate blood for this request?"
+        showNotification(
+            "Invalid blood request.",
+            "error"
         );
 
-    if (!confirmed) {
         return;
     }
 
-
-    /*
-     * Disable button
-     */
 
     if (button) {
 
-        button.disabled = true;
+        button.disabled =
+            true;
+
 
         button.textContent =
             "Accepting...";
@@ -2602,7 +4406,7 @@ async function acceptBloodRequest(
         const response =
             await fetch(
                 `/api/blood-requests/${encodeURIComponent(
-                    requestId
+                    id
                 )}/accept`,
                 {
                     method: "PUT",
@@ -2615,13 +4419,17 @@ async function acceptBloodRequest(
                     body:
                         JSON.stringify({
                             donor_id:
-                                Number(donor.id)
+                                Number(
+                                    donor.id
+                                )
                         })
                 }
             );
 
+
         const data =
             await response.json();
+
 
         if (
             !response.ok ||
@@ -2635,45 +4443,31 @@ async function acceptBloodRequest(
         }
 
 
-        showNotification(
-            "❤️ You accepted the blood request successfully!",
-            "success"
+        /*
+         * Tell requester tab that the request
+         * has changed.
+         *
+         * Because localStorage is shared,
+         * Digeesh's browser tab receives this.
+         */
+
+        localStorage.setItem(
+            "bloodconnect-request-status-updated",
+            `${id}-Accepted-${Date.now()}`
         );
 
 
-        /*
-         * Refresh donor requests
-         */
+        showNotification(
+            "✓ Blood request accepted successfully!",
+            "success"
+        );
+
 
         await loadIncomingBloodRequests(
             donor.id,
             true
         );
 
-
-        /*
-         * Refresh requester tracking
-         * in case this is the same browser.
-         */
-
-        const lastRequestId =
-            localStorage.getItem(
-                "bloodconnect-last-request"
-            ) ||
-            sessionStorage.getItem(
-                "bloodconnect-last-request"
-            );
-
-        if (
-            Number(lastRequestId) ===
-            Number(requestId)
-        ) {
-
-            loadRequesterRequestStatus(
-                requestId,
-                true
-            );
-        }
 
     } catch (error) {
 
@@ -2682,320 +4476,137 @@ async function acceptBloodRequest(
             error
         );
 
+
+        showNotification(
+            error.message ||
+            "Unable to accept this blood request.",
+            "error"
+        );
+
+
         if (button) {
 
-            button.disabled = false;
+            button.disabled =
+                false;
+
 
             button.textContent =
                 "❤️ I Can Donate";
         }
-
-        showNotification(
-            error.message ||
-            "Unable to accept this request.",
-            "error"
-        );
     }
 }
 
 
-/* =========================================================
-   REQUESTER STATUS UI
-   ========================================================= */
+/* =====================================================
+   🔔 CROSS-TAB ACCEPTANCE DETECTION
+   ===================================================== */
 
-function ensureRequesterStatusUI() {
+function setupCrossTabAcceptanceListener() {
 
-    injectIncomingRequestStyles();
+    window.addEventListener(
+        "storage",
+        event => {
 
-    let section =
-        $("bcRequesterStatus");
+            if (event.key !== "bloodconnect-request-status-updated") {
+                return;
+            }
 
-    if (section) {
-        return section;
-    }
+            const raw = String(event.newValue || "");
+            const parts = raw.split("-");
+            const requestId = Number(parts[0]);
+            const status = parts[1];
 
-    section =
-        document.createElement("section");
+            if (
+                !Number.isInteger(requestId) ||
+                requestId <= 0 ||
+                status !== "Accepted"
+            ) {
+                return;
+            }
 
-    section.id =
-        "bcRequesterStatus";
+            const donor = getLoggedInDonor();
 
-    section.className =
-        "bc-requester-status";
+            if (!donor?.id) {
+                return;
+            }
 
-    section.innerHTML = `
+            fetch(
+                `/api/blood-requests/${encodeURIComponent(requestId)}`
+            )
+                .then(response => response.json())
+                .then(data => {
 
-        <h3>
-            🩸 Your Blood Request
-        </h3>
+                    if (!data?.success || !data.request) {
+                        return;
+                    }
 
-        <p>
-            Track the response to your latest blood request.
-        </p>
+                    const request = data.request;
 
-        <div
-            id="bcRequesterStatusContent"
-            class="bc-requester-status-card"
-        >
-            Checking request status...
-        </div>
+                    if (
+                        Number(request.requester_id) ===
+                        Number(donor.id)
+                    ) {
+                        ensureRequesterStatusUI();
+                        loadRequesterRequestStatus(requestId);
+                        return;
+                    }
 
-    `;
-
-    const requestSection =
-        $("request");
-
-    if (requestSection?.parentElement) {
-
-        requestSection.parentElement.insertBefore(
-            section,
-            requestSection.nextSibling
-        );
-
-    } else {
-
-        document.body.appendChild(
-            section
-        );
-    }
-
-    return section;
-}
-
-
-/* =========================================================
-   REQUESTER STATUS
-   ========================================================= */
-
-async function loadRequesterRequestStatus(
-    requestId,
-    silent = false
-) {
-
-    if (!requestId) {
-        return;
-    }
-
-    const section =
-        ensureRequesterStatusUI();
-
-    const content =
-        $("bcRequesterStatusContent");
-
-    if (!content) {
-        return;
-    }
-
-    if (!silent) {
-
-        content.innerHTML =
-            "Checking request status...";
-    }
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/blood-requests/${encodeURIComponent(
-                    requestId
-                )}`
-            );
-
-        const data =
-            await response.json();
-
-        if (
-            !response.ok ||
-            !data.success
-        ) {
-
-            throw new Error(
-                data.message ||
-                "Unable to check request status."
-            );
+                    if (
+                        Number(request.donor_id) ===
+                        Number(donor.id)
+                    ) {
+                        loadIncomingBloodRequests(
+                            donor.id,
+                            true
+                        );
+                    }
+                })
+                .catch(error =>
+                    console.error(
+                        "Cross-tab acceptance error:",
+                        error
+                    )
+                );
         }
-
-        const request =
-            data.request;
-
-
-        /*
-         * Pending
-         */
-
-        if (
-            request.status !==
-            "Accepted"
-        ) {
-
-            content.innerHTML = `
-
-                <div class="bc-requester-pending">
-
-                    ⏳
-
-                    <strong>
-                        Waiting for a donor
-                    </strong>
-
-                    <br>
-
-                    Your request is still waiting
-                    for a donor to accept it.
-
-                </div>
-
-                <div style="margin-top:12px;">
-                    <strong>Request ID:</strong>
-                    #${escapeHtml(request.id)}
-                </div>
-
-            `;
-
-            return;
-        }
-
-
-        /*
-         * Accepted
-         */
-
-        content.innerHTML = `
-
-            <div class="bc-requester-accepted">
-
-                ❤️
-
-                <strong>
-                    A donor has accepted your request!
-                </strong>
-
-                <br><br>
-
-                Your blood request has been accepted.
-
-            </div>
-
-
-            <div
-                style="
-                    margin-top:15px;
-                    display:grid;
-                    gap:8px;
-                "
-            >
-
-                <div>
-                    <strong>Patient:</strong>
-                    ${escapeHtml(
-                        request.patient_name
-                    )}
-                </div>
-
-                <div>
-                    <strong>Blood Group:</strong>
-                    ${escapeHtml(
-                        request.blood_group
-                    )}
-                </div>
-
-                <div>
-                    <strong>Hospital:</strong>
-                    ${escapeHtml(
-                        request.hospital_name
-                    )}
-                </div>
-
-                <div>
-                    <strong>Units:</strong>
-                    ${escapeHtml(
-                        request.units_required
-                    )}
-                </div>
-
-                ${
-                    request.donor_name
-                        ? `
-                            <div>
-                                <strong>Donor:</strong>
-                                ${escapeHtml(
-                                    request.donor_name
-                                )}
-                            </div>
-                        `
-                        : ""
-                }
-
-                ${
-                    request.donor_phone
-                        ? `
-                            <div>
-                                <strong>Donor Contact:</strong>
-                                ${escapeHtml(
-                                    request.donor_phone
-                                )}
-                            </div>
-                        `
-                        : ""
-                }
-
-                <div>
-                    <strong>Status:</strong>
-                    <span
-                        style="
-                            color:#16a34a;
-                            font-weight:800;
-                        "
-                    >
-                        ✓ Accepted
-                    </span>
-                </div>
-
-            </div>
-        `;
-    } catch (error) {
-
-        console.error(
-            "Requester status error:",
-            error
-        );
-
-        content.innerHTML = `
-
-            <div class="bc-requester-pending">
-
-                ⚠️
-
-                Unable to check request status.
-
-            </div>
-        `;
-    }
+    );
 }
 
-
-/* =========================================================
+/* =====================================================
    DASHBOARD NAVIGATION
-   ========================================================= */
+   ===================================================== */
 
 function setupDashboardNavigation() {
+
+    const dashboard =
+        $("dashboard");
+
 
     if (!dashboard) {
         return;
     }
 
+
     dashboard
-        .querySelectorAll("a, button")
-        .forEach(link => {
+        .querySelectorAll(
+            "a, button"
+        )
+        .forEach(
+            link => {
 
-            const text =
-                link.textContent
-                    .trim()
-                    .toLowerCase();
+                const text =
+                    link.textContent
+                        .trim()
+                        .toLowerCase();
 
-            if (
-                text.includes("blood requests")
-            ) {
+
+                if (
+                    !text.includes(
+                        "blood requests"
+                    )
+                ) {
+                    return;
+                }
+
 
                 link.addEventListener(
                     "click",
@@ -3004,193 +4615,316 @@ function setupDashboardNavigation() {
                         const donor =
                             getLoggedInDonor();
 
-                        if (!donor?.id) {
+
+                        if (
+                            !donor?.id
+                        ) {
                             return;
                         }
 
+
                         event.preventDefault();
+
 
                         const section =
                             ensureIncomingRequestsUI();
+
 
                         loadIncomingBloodRequests(
                             donor.id
                         );
 
-                        section?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "start"
+
+                        loadRequesterRequestsForDashboard(
+                            donor.id
+                        );
+
+
+                        section
+                            ?.scrollIntoView({
+                                behavior:
+                                    "smooth",
+                                block:
+                                    "start"
+                            });
+                    }
+                );
+            }
+        );
+}
+
+
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+
+function logout() {
+
+    $("dashboard")
+        ?.classList.remove(
+            "show"
+        );
+
+
+    if ($("login")) {
+
+        $("login").style.display =
+            "";
+    }
+
+
+    /*
+     * Remove login identity.
+     *
+     * IMPORTANT:
+     *
+     * DO NOT remove
+     * bloodconnect-last-request.
+     *
+     * The requester needs the request ID
+     * even after donor logout.
+     */
+
+    localStorage.removeItem(
+        "bloodconnect-user"
+    );
+
+
+    localStorage.removeItem(
+        "bloodconnect-donor"
+    );
+
+
+    sessionStorage.removeItem(
+        "bloodconnect-user"
+    );
+
+
+    sessionStorage.removeItem(
+        "bloodconnect-donor"
+    );
+
+
+    stopRequesterStatusPolling();
+
+
+    selectedDonorId =
+        null;
+
+
+    incomingRequestsLoadedFor =
+        null;
+
+
+    $("bcIncomingRequests")
+        ?.remove();
+
+
+    $("bcRequesterStatus")
+        ?.remove();
+
+
+    updateNavbarForLoginState(
+        false
+    );
+
+
+    showNotification(
+        "You have been logged out.",
+        "success"
+    );
+}
+
+
+/* =====================================================
+   SMOOTH NAVIGATION
+   ===================================================== */
+
+function setupSmoothNavigation() {
+
+    document
+        .querySelectorAll(
+            'a[href^="#"]'
+        )
+        .forEach(
+            link => {
+
+                link.addEventListener(
+                    "click",
+                    event => {
+
+                        const targetId =
+                            link.getAttribute(
+                                "href"
+                            );
+
+
+                        if (
+                            !targetId ||
+                            targetId === "#"
+                        ) {
+                            return;
+                        }
+
+
+                        const target =
+                            document.querySelector(
+                                targetId
+                            );
+
+
+                        if (!target) {
+                            return;
+                        }
+
+
+                        event.preventDefault();
+
+
+                        if (
+                            targetId ===
+                            "#login"
+                        ) {
+
+                            $("dashboard")
+                                ?.classList.remove(
+                                    "show"
+                                );
+
+
+                            if ($("login")) {
+
+                                $("login").style.display =
+                                    "";
+                            }
+                        }
+
+
+                        target.scrollIntoView({
+                            behavior:
+                                "smooth",
+                            block:
+                                "start"
                         });
                     }
                 );
             }
-        });
+        );
 }
 
 
-/* =========================================================
-   LOGOUT
-   ========================================================= */
+/* =====================================================
+   BLOOD GROUP CARDS
+   ===================================================== */
 
-if (logoutBtn) {
+function setupBloodGroupCards() {
 
-    logoutBtn.addEventListener(
+    document
+        .querySelectorAll(
+            ".blood-card"
+        )
+        .forEach(
+            card => {
+
+                card.addEventListener(
+                    "click",
+                    () => {
+
+                        const group =
+                            card
+                                .querySelector(
+                                    "span"
+                                )
+                                ?.textContent
+                                .trim()
+                                .replace(
+                                    "−",
+                                    "-"
+                                );
+
+
+                        if (
+                            group &&
+                            $("bloodGroup")
+                        ) {
+
+                            $("bloodGroup")
+                                .value =
+                                group;
+                        }
+
+
+                        $("find-donor")
+                            ?.scrollIntoView({
+                                behavior:
+                                    "smooth",
+                                block:
+                                    "start"
+                            });
+                    }
+                );
+            }
+        );
+}
+
+
+/* =====================================================
+   PASSWORD TOGGLE
+   ===================================================== */
+
+function setupPasswordToggle() {
+
+    const toggle =
+        $("passwordToggle");
+
+
+    const input =
+        $("loginPassword");
+
+
+    if (
+        !toggle ||
+        !input
+    ) {
+        return;
+    }
+
+
+    toggle.addEventListener(
         "click",
         () => {
 
-            dashboard?.classList.remove(
-                "show"
+            const show =
+                input.type ===
+                "password";
+
+
+            input.type =
+                show
+                    ? "text"
+                    : "password";
+
+
+            toggle.textContent =
+                show
+                    ? "Hide"
+                    : "Show";
+
+
+            toggle.setAttribute(
+                "aria-label",
+                show
+                    ? "Hide password"
+                    : "Show password"
             );
-
-            if (loginSection) {
-                loginSection.style.display = "";
-            }
-
-            localStorage.removeItem(
-                "bloodconnect-user"
-            );
-
-            localStorage.removeItem(
-                "bloodconnect-donor"
-            );
-
-            sessionStorage.removeItem(
-                "bloodconnect-user"
-            );
-
-            sessionStorage.removeItem(
-                "bloodconnect-donor"
-            );
-
-            selectedDonorId = null;
-
-            incomingRequestsLoadedFor = null;
-
-            $("bcIncomingRequests")?.remove();
-
-            updateNavbarForLoginState(
-                false
-            );
-
-            showNotification(
-                "You have been logged out.",
-                "success"
-            );
-
-            setTimeout(() => {
-
-                loginSection?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-
-            }, 200);
         }
     );
 }
 
 
-/* =========================================================
-   BLOOD GROUP CARDS
-   ========================================================= */
-
-document
-    .querySelectorAll(".blood-card")
-    .forEach(card => {
-
-        card.addEventListener(
-            "click",
-            () => {
-
-                const groupElement =
-                    card.querySelector("span");
-
-                if (!groupElement) {
-                    return;
-                }
-
-                const selectedGroup =
-                    groupElement.textContent
-                        .trim()
-                        .replace("−", "-");
-
-                const bloodGroupSelect =
-                    $("bloodGroup");
-
-                if (bloodGroupSelect) {
-                    bloodGroupSelect.value =
-                        selectedGroup;
-                }
-
-                $("find-donor")
-                    ?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start"
-                    });
-            }
-        );
-    });
-
-
-/* =========================================================
-   SMOOTH NAVIGATION
-   ========================================================= */
-
-document
-    .querySelectorAll('a[href^="#"]')
-    .forEach(link => {
-
-        link.addEventListener(
-            "click",
-            function (event) {
-
-                const targetId =
-                    this.getAttribute("href");
-
-                if (
-                    !targetId ||
-                    targetId === "#"
-                ) {
-                    return;
-                }
-
-                const target =
-                    document.querySelector(
-                        targetId
-                    );
-
-                if (!target) {
-                    return;
-                }
-
-                event.preventDefault();
-
-                if (
-                    targetId === "#login"
-                ) {
-
-                    dashboard?.classList.remove(
-                        "show"
-                    );
-
-                    if (loginSection) {
-                        loginSection.style.display =
-                            "";
-                    }
-                }
-
-                target.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-            }
-        );
-    });
-
-
-/* =========================================================
-   STATISTICS COUNTER
-   ========================================================= */
+/* =====================================================
+   STATS
+   ===================================================== */
 
 function animateCounter(
     element,
@@ -3201,71 +4935,104 @@ function animateCounter(
         return;
     }
 
-    let current = 0;
 
-    const duration = 1500;
+    let current =
+        0;
+
 
     const step =
-        target /
-        (duration / 20);
+        target / 75;
 
-    const counter =
-        setInterval(() => {
 
-            current += step;
+    const timer =
+        setInterval(
+            () => {
 
-            if (current >= target) {
+                current +=
+                    step;
 
-                current = target;
 
-                clearInterval(counter);
-            }
+                if (
+                    current >=
+                    target
+                ) {
 
-            element.textContent =
-                Math.floor(current)
-                    .toLocaleString() +
-                "+";
+                    current =
+                        target;
 
-        }, 20);
+
+                    clearInterval(
+                        timer
+                    );
+                }
+
+
+                element.textContent =
+                    `${Math.floor(
+                        current
+                    ).toLocaleString()}+`;
+
+            },
+            20
+        );
 }
 
 
-const statsSection =
-    document.querySelector(
-        ".stats-section"
-    );
+function setupStats() {
 
-let statsAnimated = false;
+    const section =
+        document.querySelector(
+            ".stats-section"
+        );
 
-if (statsSection) {
 
-    const observer =
-        new IntersectionObserver(
-            entries => {
+    if (
+        !section ||
+        !("IntersectionObserver" in window)
+    ) {
+        return;
+    }
 
-                entries.forEach(entry => {
+
+    let animated =
+        false;
+
+
+    new IntersectionObserver(
+        entries => {
+
+            entries.forEach(
+                entry => {
 
                     if (
-                        entry.isIntersecting &&
-                        !statsAnimated
+                        !entry.isIntersecting ||
+                        animated
                     ) {
+                        return;
+                    }
 
-                        statsAnimated = true;
 
-                        const stats =
-                            document.querySelectorAll(
-                                ".stat-item strong"
-                            );
+                    animated =
+                        true;
 
-                        const values = [
-                            1250,
-                            320,
-                            28,
-                            98
-                        ];
 
-                        stats.forEach(
-                            (stat, index) => {
+                    const values = [
+                        1250,
+                        320,
+                        28,
+                        98
+                    ];
+
+
+                    document
+                        .querySelectorAll(
+                            ".stat-item strong"
+                        )
+                        .forEach(
+                            (
+                                element,
+                                index
+                            ) => {
 
                                 if (
                                     values[index] !==
@@ -3273,302 +5040,214 @@ if (statsSection) {
                                 ) {
 
                                     animateCounter(
-                                        stat,
+                                        element,
                                         values[index]
                                     );
                                 }
                             }
                         );
-                    }
-                });
+                }
+            );
 
-            },
-            {
-                threshold: 0.3
-            }
-        );
-
-    observer.observe(statsSection);
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-   ========================================================= */
-
-function escapeHtml(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
-    }
-
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
-/* =========================================================
-   DATE FORMAT
-   ========================================================= */
-
-function formatRequestDate(
-    dateValue
-) {
-
-    if (!dateValue) {
-        return "Not specified";
-    }
-
-    const date =
-        new Date(dateValue);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return String(dateValue);
-    }
-
-    return date.toLocaleDateString(
-        "en-IN",
+        },
         {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
+            threshold:
+                0.3
         }
+    ).observe(
+        section
     );
 }
 
 
-function formatRequestDateTime(
-    dateValue
-) {
-
-    if (!dateValue) {
-        return "";
-    }
-
-    const date =
-        new Date(dateValue);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-        return String(dateValue);
-    }
-
-    return date.toLocaleString(
-        "en-IN",
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit"
-        }
-    );
-}
-
-
-/* =========================================================
-   URGENCY CLASS
-   ========================================================= */
-
-function getUrgencyClass(
-    urgency
-) {
-
-    const value =
-        String(
-            urgency || ""
-        ).toLowerCase();
-
-    if (
-        value.includes("critical") ||
-        value.includes("emergency")
-    ) {
-        return "critical";
-    }
-
-    if (
-        value.includes("urgent")
-    ) {
-        return "urgent";
-    }
-
-    return "normal";
-}
-
-
-/* =========================================================
-   RESTORE LOGIN SESSION
-   ========================================================= */
+/* =====================================================
+   RESTORE LOGIN
+   ===================================================== */
 
 function restoreLoggedInUser() {
 
     const donor =
         getLoggedInDonor();
 
-    if (donor?.id) {
 
-        updateNavbarForLoginState(
-            true
-        );
-
-        showDashboard(
-            donor.name ||
-                "BloodConnect Donor",
-
-            donor.blood_group ||
-                donor.bloodGroup ||
-                "O+",
-
-            donor.availability
-        );
-
-    } else {
+    if (
+        !donor?.id
+    ) {
 
         updateNavbarForLoginState(
             false
         );
-    }
 
 
-    /*
-     * Restore requester request status
-     * after page refresh.
-     */
+        /*
+         * Even if not logged in,
+         * the browser may have a requester
+         * blood request stored.
+         */
 
-    const lastRequestId =
-        localStorage.getItem(
-            "bloodconnect-last-request"
-        ) ||
-        sessionStorage.getItem(
-            "bloodconnect-last-request"
-        );
-
-    if (lastRequestId) {
-
-        ensureRequesterStatusUI();
-
-        loadRequesterRequestStatus(
-            lastRequestId,
-            true
-        );
-    }
-}
+        startRequesterStatusPollingFromStorage();
 
 
-/* =========================================================
-   AUTO REFRESH REQUEST STATUS
-   ========================================================= */
-
-let requesterStatusInterval = null;
-
-function startRequesterStatusTracking(
-    requestId
-) {
-
-    if (!requestId) {
         return;
     }
 
-    if (requesterStatusInterval) {
 
-        clearInterval(
-            requesterStatusInterval
-        );
-    }
+    updateNavbarForLoginState(
+        true
+    );
 
-    requesterStatusInterval =
-        setInterval(
-            async () => {
 
-                try {
+    showDashboard(
 
-                    const response =
-                        await fetch(
-                            `/api/blood-requests/${encodeURIComponent(
-                                requestId
-                            )}`
-                        );
+        donor.name ||
+            "BloodConnect Donor",
 
-                    const data =
-                        await response.json();
+        donor.blood_group ||
+            donor.bloodGroup ||
+            "O+",
 
-                    if (
-                        response.ok &&
-                        data.success
-                    ) {
-
-                        loadRequesterRequestStatus(
-                            requestId,
-                            true
-                        );
-
-                        if (
-                            data.request?.status ===
-                            "Accepted"
-                        ) {
-
-                            clearInterval(
-                                requesterStatusInterval
-                            );
-
-                            requesterStatusInterval =
-                                null;
-                        }
-                    }
-
-                } catch (error) {
-
-                    console.log(
-                        "Status refresh skipped."
-                    );
-                }
-
-            },
-            10000
-        );
+        donor.availability
+    );
 }
 
 
-/* =========================================================
-   INITIAL PAGE LOAD
-   ========================================================= */
+/* =====================================================
+   EVENTS
+   ===================================================== */
+
+function setupEvents() {
+
+    $("donorSearchForm")
+        ?.addEventListener(
+            "submit",
+            searchDonors
+        );
+
+
+    $("bloodRequestForm")
+        ?.addEventListener(
+            "submit",
+            submitBloodRequest
+        );
+
+
+    $("donorRegistrationForm")
+        ?.addEventListener(
+            "submit",
+            submitRegistration
+        );
+
+
+    $("loginForm")
+        ?.addEventListener(
+            "submit",
+            submitLogin
+        );
+
+
+    $("availabilityToggle")
+        ?.addEventListener(
+            "change",
+            updateAvailability
+        );
+
+
+    $("logoutBtn")
+        ?.addEventListener(
+            "click",
+            logout
+        );
+
+
+    setupMobileMenu();
+
+    setupTheme();
+
+    setupPasswordToggle();
+
+    setupSmoothNavigation();
+
+    setupBloodGroupCards();
+
+    setupDashboardNavigation();
+
+    setupStats();
+
+
+    /*
+     * NEW:
+     * Cross-tab request creation detection.
+     */
+
+    setupCrossTabRequestListener();
+
+
+    /*
+     * NEW:
+     * Cross-tab acceptance detection.
+     */
+
+    setupCrossTabAcceptanceListener();
+}
+
+
+/* =====================================================
+   GLOBAL FUNCTIONS
+   ===================================================== */
+
+window.showNotification =
+    showNotification;
+
+
+window.viewDonorProfile =
+    viewDonorProfile;
+
+
+window.requestBlood =
+    requestBlood;
+
+
+window.loadIncomingBloodRequests =
+    loadIncomingBloodRequests;
+
+
+window.loadRequesterRequestStatus =
+    loadRequesterRequestStatus;
+
+
+window.acceptBloodRequest =
+    acceptBloodRequest;
+
+
+window.loadRequesterRequestsForDashboard =
+    loadRequesterRequestsForDashboard;
+
+
+window.showDashboard =
+    showDashboard;
+
+
+/* =====================================================
+   INITIALIZATION
+   ===================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
     () => {
 
-        setupDashboardNavigation();
+        setupEvents();
+
 
         restoreLoggedInUser();
 
-        const lastRequestId =
-            localStorage.getItem(
-                "bloodconnect-last-request"
-            ) ||
-            sessionStorage.getItem(
-                "bloodconnect-last-request"
-            );
 
-        if (lastRequestId) {
+        /*
+         * Restore latest requester request
+         * after page refresh.
+         */
 
-            startRequesterStatusTracking(
-                lastRequestId
-            );
-        }
+        startRequesterStatusPollingFromStorage();
+
 
         console.log(
             "🩸 BloodConnect initialized successfully!"
@@ -3576,36 +5255,6 @@ document.addEventListener(
     }
 );
 
-
-/* =========================================================
-   GLOBAL FUNCTIONS
-   ========================================================= */
-
-window.showNotification =
-    showNotification;
-
-window.viewDonorProfile =
-    viewDonorProfile;
-
-window.requestBlood =
-    requestBlood;
-
-window.loadIncomingBloodRequests =
-    loadIncomingBloodRequests;
-
-window.showDashboard =
-    showDashboard;
-
-window.acceptBloodRequest =
-    acceptBloodRequest;
-
-window.loadRequesterRequestStatus =
-    loadRequesterRequestStatus;
-
-
-/* =========================================================
-   FINAL
-   ========================================================= */
 
 console.log(
     "🩸 BLOODCONNECT SCRIPT.JS IS WORKING!"
